@@ -47,10 +47,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Perform AI comparison
+    // Perform AI comparison (locations passed for programmatic location-page matching)
     const result = await comparePages(
       body.template_pages,
-      body.client_pages
+      body.client_pages,
+      body.locations || undefined
     )
 
     // If project_id provided, save comparison result to project

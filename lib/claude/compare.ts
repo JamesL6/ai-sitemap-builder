@@ -9,14 +9,22 @@ export interface ComparisonResult extends ParsedComparison {
   tokensUsed?: number
 }
 
+interface LocationInfo {
+  id: string
+  name: string
+  url_slug: string
+}
+
 /**
- * Compare template pages with client pages using Claude AI
+ * Compare template pages with client pages using Claude AI.
+ * If locations are provided, also does programmatic location-page matching.
  */
 export async function comparePages(
   templatePages: Array<{ title: string; url_pattern: string }>,
-  clientPages: Array<{ title: string; url: string }>
+  clientPages: Array<{ title: string; url: string }>,
+  locations?: LocationInfo[]
 ): Promise<ComparisonResult> {
-  // Build prompt
+  // Build prompt — only sends base template pages (not location-expanded)
   const promptData: ComparisonPromptData = {
     templatePages,
     clientPages
@@ -24,24 +32,20 @@ export async function comparePages(
   const prompt = buildComparisonPrompt(promptData)
 
   try {
-    // Ask Claude with extended thinking for complex page matching
+    // Ask Claude — reduced thinking budget for faster response
     const response = await askClaude(prompt, {
-      // temperature: 1, // Temperature is automatically set to 1 by the client when thinking is enabled
-      maxTokens: 64000, // Maximum output tokens for comprehensive analysis
+      maxTokens: 16000,
       thinking: {
         type: 'enabled',
-        budget_tokens: 32000 // Large thinking budget for deep reasoning on complex sitemaps
+        budget_tokens: 10000
       }
     })
 
     // Parse response
     const parsed = parseComparisonResponse(response)
 
-    // Programmatically compute client-only pages instead of relying on AI to list them all.
-    // With large sitemaps (hundreds of pages), AI truncates the client_only list.
-    // We take the full client list and subtract any URLs that appear in matches or uncertain.
+    // Collect all client URLs that were matched or uncertain by AI
     const matchedClientUrls = new Set<string>()
-    
     for (const match of parsed.matches) {
       matchedClientUrls.add(normalizeUrl(match.client_page.url))
     }
@@ -49,6 +53,24 @@ export async function comparePages(
       matchedClientUrls.add(normalizeUrl(uncertain.client_page.url))
     }
 
+    // If locations provided, do programmatic location-page matching
+    if (locations && locations.length > 0) {
+      const locationMatches = matchLocationPages(clientPages, locations, templatePages, matchedClientUrls)
+      
+      // Add location matches to the results
+      parsed.matches.push(...locationMatches.matches)
+      parsed.uncertain.push(...locationMatches.uncertain)
+      
+      // Update matched URLs set
+      for (const m of locationMatches.matches) {
+        matchedClientUrls.add(normalizeUrl(m.client_page.url))
+      }
+      for (const u of locationMatches.uncertain) {
+        matchedClientUrls.add(normalizeUrl(u.client_page.url))
+      }
+    }
+
+    // Compute client-only pages by subtracting all matched/uncertain URLs
     const computedClientOnly = clientPages
       .filter(page => !matchedClientUrls.has(normalizeUrl(page.url)))
       .map(page => ({
@@ -68,6 +90,129 @@ export async function comparePages(
     }
     throw new Error('Failed to compare pages with AI')
   }
+}
+
+/**
+ * Programmatically match client pages to location-specific template pages.
+ * Looks for URL patterns like /{location-slug}/, /{location-slug}-{service}/,
+ * or title patterns like "{Location Name} {Service}".
+ */
+function matchLocationPages(
+  clientPages: Array<{ title: string; url: string }>,
+  locations: LocationInfo[],
+  templatePages: Array<{ title: string; url_pattern: string }>,
+  alreadyMatched: Set<string>
+): {
+  matches: ParsedComparison['matches']
+  uncertain: ParsedComparison['uncertain']
+} {
+  const matches: ParsedComparison['matches'] = []
+  const uncertain: ParsedComparison['uncertain'] = []
+
+  // Build lookup helpers
+  const locationSlugs = locations.map(l => l.url_slug.toLowerCase())
+  const locationNames = locations.map(l => l.name.toLowerCase())
+  const templateTitles = templatePages.map(t => t.title.toLowerCase())
+
+  for (const clientPage of clientPages) {
+    if (alreadyMatched.has(normalizeUrl(clientPage.url))) continue
+
+    const clientUrl = clientPage.url.toLowerCase()
+    const clientTitle = clientPage.title.toLowerCase()
+
+    // Check if this client page contains a location slug in its URL
+    let matchedLocation: LocationInfo | null = null
+    for (let i = 0; i < locations.length; i++) {
+      const slug = locationSlugs[i]
+      if (clientUrl.includes(`/${slug}/`) || clientUrl.includes(`/${slug}-`) || clientUrl.endsWith(`/${slug}`)) {
+        matchedLocation = locations[i]
+        break
+      }
+    }
+
+    // Also check title for location name
+    if (!matchedLocation) {
+      for (let i = 0; i < locations.length; i++) {
+        if (clientTitle.includes(locationNames[i])) {
+          matchedLocation = locations[i]
+          break
+        }
+      }
+    }
+
+    if (!matchedLocation) continue
+
+    // This client page is location-related. Try to match it to a template page.
+    const locationName = matchedLocation.name
+    const locationSlug = matchedLocation.url_slug
+
+    // Check if it's a location landing page (URL is just the location slug)
+    const pathAfterDomain = clientUrl.replace(/^https?:\/\/[^/]+/, '')
+    const isLandingPage = pathAfterDomain.replace(/\/$/, '') === `/${locationSlug}` ||
+                          pathAfterDomain.replace(/\/$/, '') === `/service-areas/${locationSlug}`
+
+    if (isLandingPage) {
+      matches.push({
+        template_page: `${locationName} (Location Landing Page)`,
+        client_page: { title: clientPage.title, url: clientPage.url },
+        confidence: 0.9
+      })
+      continue
+    }
+
+    // Try to match against template service pages 
+    // e.g., client "/nashville-tn/water-damage/" → template "Water Damage Restoration"
+    let bestMatch: { templateTitle: string; confidence: number } | null = null
+
+    for (const tp of templatePages) {
+      const tTitle = tp.title.toLowerCase()
+      const tSlug = tp.url_pattern.toLowerCase().replace(/^\//, '').replace(/\//g, '-')
+
+      // Check URL contains template slug
+      if (clientUrl.includes(tSlug) || clientUrl.includes(tSlug.replace(/-/g, '/'))) {
+        const conf = 0.85
+        if (!bestMatch || conf > bestMatch.confidence) {
+          bestMatch = { templateTitle: `${locationName} ${tp.title}`, confidence: conf }
+        }
+      }
+
+      // Check title contains template title keywords
+      const titleWithoutLocation = clientTitle.replace(locationName.toLowerCase(), '').trim()
+      if (titleWithoutLocation && (
+        tTitle.includes(titleWithoutLocation) || titleWithoutLocation.includes(tTitle)
+      )) {
+        const conf = 0.8
+        if (!bestMatch || conf > bestMatch.confidence) {
+          bestMatch = { templateTitle: `${locationName} ${tp.title}`, confidence: conf }
+        }
+      }
+    }
+
+    if (bestMatch && bestMatch.confidence >= 0.7) {
+      matches.push({
+        template_page: bestMatch.templateTitle,
+        client_page: { title: clientPage.title, url: clientPage.url },
+        confidence: bestMatch.confidence
+      })
+    } else if (bestMatch) {
+      uncertain.push({
+        template_page: bestMatch.templateTitle,
+        client_page: { title: clientPage.title, url: clientPage.url },
+        confidence: bestMatch.confidence,
+        reason: `Location page for ${locationName} - possible match based on URL/title similarity`
+      })
+    } else {
+      // It's a location page but doesn't match any template service
+      uncertain.push({
+        template_page: `${locationName} (Unknown Service)`,
+        client_page: { title: clientPage.title, url: clientPage.url },
+        confidence: 0.4,
+        reason: `Found under ${locationName} location path but doesn't match a known template service`
+      })
+    }
+  }
+
+  return { matches, uncertain }
 }
 
 /**

@@ -95,37 +95,10 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     }
   }
 
-  // Build template pages list for comparison, including location-expanded pages when locations are configured
+  // Build template pages list for comparison
+  // Only sends base template pages to Claude (fast). Location matching is done programmatically.
   const getComparisonTemplatePages = (): Array<{ title: string; url_pattern: string }> => {
-    const basePages = extractAllPagesWithUrls(templateStructure)
-
-    if (locations.length === 0) {
-      return basePages
-    }
-
-    // Add location landing pages (e.g., "Nashville" at /service-areas/nashville)
-    const locationUrlPattern = (template?.url_patterns as Record<string, string> | null)?.location || '/service-areas/{location_slug}'
-    const locationPages = locations.map(loc => ({
-      title: loc.name,
-      url_pattern: locationUrlPattern.replace('{location_slug}', loc.url_slug)
-    }))
-
-    // Add location × service pages (e.g., "Nashville Water Damage" at /nashville-water-damage)
-    const serviceLocationUrlPattern = (template?.url_patterns as Record<string, string> | null)?.service_location || '/{location_slug}-{page_slug}'
-    const serviceLocationPages: Array<{ title: string; url_pattern: string }> = []
-    for (const loc of locations) {
-      for (const page of multiplyPages) {
-        const pageSlug = page.url_pattern.replace(/^\//, '').replace(/\//g, '-')
-        serviceLocationPages.push({
-          title: `${loc.name} ${page.title}`,
-          url_pattern: serviceLocationUrlPattern
-            .replace('{location_slug}', loc.url_slug)
-            .replace('{page_slug}', pageSlug)
-        })
-      }
-    }
-
-    return [...basePages, ...locationPages, ...serviceLocationPages]
+    return extractAllPagesWithUrls(templateStructure)
   }
 
   // Handle AI comparison
@@ -146,7 +119,8 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
         body: JSON.stringify({
           project_id: project.id,
           template_pages: templatePages,
-          client_pages: crawlData.pages
+          client_pages: crawlData.pages,
+          locations: locations.length > 0 ? locations : undefined
         })
       })
 
@@ -391,13 +365,16 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-medium text-blue-900">Ready to Compare</p>
                   <p className="text-sm text-blue-700 mt-1">
-                    {getComparisonTemplatePages().length} template pages
-                    {locations.length > 0 && ` (${extractAllPagesWithUrls(templateStructure).length} base + ${locations.length} location landing + ${locations.length * multiplyPages.length} location×service)`}
-                    {' '}vs {crawlData?.pages?.length || 0} crawled pages
+                    {getComparisonTemplatePages().length} template pages vs {crawlData?.pages?.length || 0} crawled pages
                   </p>
+                  {locations.length > 0 && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      {locations.length} location{locations.length !== 1 ? 's' : ''} configured — location page matching will be included automatically.
+                    </p>
+                  )}
                   {locations.length === 0 && (
                     <p className="text-xs text-amber-600 mt-1">
-                      Tip: Add locations in the previous step for a more comprehensive comparison that includes location-specific pages.
+                      Tip: Add locations in the previous step for location-aware page matching.
                     </p>
                   )}
                 </div>
