@@ -26,7 +26,7 @@
   - Docs to update: None
   - Dependencies: 1.1
 
-- [ ] **1.3:** Create Supabase project and get credentials
+- [x] **1.3:** Create Supabase project and get credentials
   - Files: `.env.local`, `.env.example`
   - Docs to update: `07_DEVELOPMENT_ENVIRONMENT.md`
   - Dependencies: None

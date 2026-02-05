@@ -146,17 +146,18 @@ Set these in Railway dashboard (Project → Variables):
 
 ## Supabase Setup
 
-### 1. Create Project
-1. Go to https://supabase.com/dashboard
-2. Click "New Project"
-3. Choose organization, name, password, region
-4. Wait for project to initialize
+### Project Details
+- **Project Name:** ai-sitemap-builder
+- **Project ID:** yvwxzybnyjnorsaqpkpa
+- **Region:** us-east-1
+- **Project URL:** https://yvwxzybnyjnorsaqpkpa.supabase.co
+- **Dashboard:** https://supabase.com/dashboard/project/yvwxzybnyjnorsaqpkpa
+- **Status:** Active ✅
 
-### 2. Get API Keys
-1. Go to Project Settings → API
-2. Copy `URL` → `NEXT_PUBLIC_SUPABASE_URL`
-3. Copy `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Copy `service_role` → `SUPABASE_SERVICE_ROLE_KEY`
+### API Keys (Already configured in .env.local)
+- `NEXT_PUBLIC_SUPABASE_URL`: https://yvwxzybnyjnorsaqpkpa.supabase.co
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Configured ✅
+- `SUPABASE_SERVICE_ROLE_KEY`: Get from Project Settings → API (admin only)
 
 ### 3. Run Migrations
 Copy and run each SQL file from `supabase/migrations/` in the SQL Editor.
