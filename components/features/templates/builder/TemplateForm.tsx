@@ -81,9 +81,8 @@ export function TemplateForm({ initialTemplate, mode }: TemplateFormProps) {
         router.push('/templates')
         router.refresh()
       } else {
-        // Stay on edit page, just refresh data
+        // Stay on edit page, just refresh data silently
         router.refresh()
-        alert('Template saved successfully!')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
