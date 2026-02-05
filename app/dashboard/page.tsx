@@ -28,7 +28,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/dashboard/projects/new">
+              <Link href="/projects/new">
                 <Plus className="mr-2 h-4 w-4" />
                 New Project
               </Link>
@@ -48,7 +48,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/templates">
+              <Link href="/templates">
                 View Templates
               </Link>
             </Button>
