@@ -232,7 +232,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
                     <p className="text-sm font-medium">{page.title}</p>
                     {page.path.length > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        {page.path.join(' > ')} > {page.title}
+                        {page.path.join(' > ')} {'>'} {page.title}
                       </p>
                     )}
                     <p className="text-xs text-blue-600 mt-1">{page.url_pattern}</p>
