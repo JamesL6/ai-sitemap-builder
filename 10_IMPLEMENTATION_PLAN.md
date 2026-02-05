@@ -174,69 +174,71 @@
 **Success Criteria:** System can crawl sites and identify matching pages
 
 ### Tasks
-- [ ] **3.1:** Build sitemap crawler utility
+- [x] **3.1:** Build sitemap crawler utility
   - Files: `lib/crawler/sitemap.ts`, `lib/crawler/parser.ts`, `lib/crawler/fetcher.ts`
   - Docs to update: None
   - Dependencies: Phase 2
 
-- [ ] **3.2:** Build POST /api/crawl endpoint
+- [x] **3.2:** Build POST /api/crawl endpoint
   - Files: `app/api/crawl/route.ts`
   - Docs to update: `04_API_SPECIFICATION.md`
   - Dependencies: 3.1
 
-- [ ] **3.3:** Build Crawl Form component
+- [x] **3.3:** Build Crawl Form component
   - Files: `components/features/crawler/CrawlForm.tsx`, `components/features/crawler/CrawlResults.tsx`
   - Docs to update: None
   - Dependencies: 3.2
 
-- [ ] **3.4:** Build Claude API client
+- [x] **3.4:** Build Claude API client
   - Files: `lib/claude/client.ts`, `lib/claude/prompts.ts`
   - Docs to update: None
   - Dependencies: None
 
-- [ ] **3.5:** Build page comparison function
+- [x] **3.5:** Build page comparison function
   - Files: `lib/claude/compare.ts`
   - Docs to update: None
   - Dependencies: 3.4
 
-- [ ] **3.6:** Build POST /api/ai/compare endpoint
+- [x] **3.6:** Build POST /api/ai/compare endpoint
   - Files: `app/api/ai/compare/route.ts`
   - Docs to update: `04_API_SPECIFICATION.md`
   - Dependencies: 3.5
 
-- [ ] **3.7:** Build Service Configuration component
+- [x] **3.7:** Build Service Configuration component
   - Files: `components/features/services/ServiceConfig.tsx`, `components/features/services/ServiceToggle.tsx`
   - Docs to update: None
   - Dependencies: Phase 2
 
-- [ ] **3.8:** Build Location Input component
+- [x] **3.8:** Build Location Input component
   - Files: `components/features/locations/LocationInput.tsx`, `components/features/locations/LocationList.tsx`
   - Docs to update: None
   - Dependencies: Phase 2
 
-- [ ] **3.9:** Build location × service matrix generator
+- [x] **3.9:** Build location × service matrix generator
   - Files: `lib/utils/matrix.ts`
   - Docs to update: None
   - Dependencies: 3.7, 3.8
 
-- [ ] **3.10:** Build sitemap nodes API endpoints
+- [x] **3.10:** Build sitemap nodes API endpoints
   - Files: `app/api/projects/[id]/nodes/route.ts`, `app/api/projects/[id]/nodes/bulk/route.ts`, `app/api/projects/[id]/nodes/[nodeId]/route.ts`
   - Docs to update: `04_API_SPECIFICATION.md`
   - Dependencies: 2.6
 
-- [ ] **3.11:** Integrate crawl + compare + matrix into project editor
-  - Files: `app/(dashboard)/projects/[id]/page.tsx` (update)
+- [x] **3.11:** Integrate crawl + compare + matrix into project editor
+  - Files: `app/(dashboard)/projects/[id]/page.tsx`, `components/features/projects/ProjectEditor.tsx`
   - Docs to update: None
   - Dependencies: 3.3, 3.6, 3.9, 3.10
 
 ### Phase 3 Completion Checklist
-- [ ] Crawler fetches and parses sitemap.xml
-- [ ] Crawler handles missing sitemaps gracefully
-- [ ] Claude comparison returns matches/gaps
-- [ ] Services can be toggled on/off
-- [ ] Locations can be pasted and parsed
-- [ ] Location × service matrix generates correctly
-- [ ] Sitemap nodes saved to database
+- [x] Crawler fetches and parses sitemap.xml
+- [x] Crawler handles missing sitemaps gracefully
+- [x] Claude comparison returns matches/gaps
+- [x] Services can be toggled on/off
+- [x] Locations can be pasted and parsed
+- [x] Location × service matrix generates correctly
+- [x] Sitemap nodes saved to database
+
+### Phase 3 COMPLETE ✅ (11/11 tasks done)
 
 ---
 
