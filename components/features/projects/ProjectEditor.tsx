@@ -218,22 +218,63 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
         />
         
         {crawlCompleted && (
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-800">
-                    Crawl complete! Found {crawlData?.pages?.length || 0} pages.
-                  </span>
+          <>
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800">
+                      Crawl complete! Found {crawlData?.pages?.length || 0} pages.
+                    </span>
+                  </div>
+                  <Button onClick={() => goToNextTab('crawl')} className="gap-2">
+                    Continue to AI Comparison
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button onClick={() => goToNextTab('crawl')} className="gap-2">
-                  Continue to AI Comparison
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Show crawled pages list */}
+            {crawlData?.pages && crawlData.pages.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Crawled Pages</CardTitle>
+                  <CardDescription>
+                    {crawlData.pages.length} pages discovered from the client website
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {crawlData.pages.map((page, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start justify-between p-2 border rounded-md hover:bg-muted/50"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{page.title || 'Untitled'}</p>
+                          <a
+                            href={page.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-muted-foreground hover:text-blue-600 truncate block"
+                          >
+                            {page.url}
+                          </a>
+                        </div>
+                        {page.lastModified && (
+                          <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                            {new Date(page.lastModified).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </TabsContent>
 
