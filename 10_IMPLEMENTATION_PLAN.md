@@ -66,7 +66,7 @@
   - Docs to update: None
   - Dependencies: 1.1
 
-- [ ] **1.11:** Configure Railway project
+- [x] **1.11:** Configure Railway project
   - Files: None (Railway dashboard)
   - Docs to update: `07_DEVELOPMENT_ENVIRONMENT.md`
   - Dependencies: 1.10

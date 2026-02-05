@@ -111,9 +111,17 @@ npx supabase studio
 |-------------|-----|--------|----------------|
 | Development | http://localhost:3000 | - | `npm run dev` |
 | Preview | Auto-generated | PR branches | Auto (Railway) |
-| Production | https://sitemap-builder.yourcompany.com | main | Auto on push (Railway) |
+| Production | https://ai-sitemap-builder-production.up.railway.app | main | Auto on push (Railway) |
 
 ### Railway Deployment
+
+**Project Details:**
+- **Project Name:** exquisite-insight
+- **Project ID:** 106d11fa-150b-4b65-b8a8-3ec551d4a3f3
+- **Service:** ai-sitemap-builder
+- **Production URL:** https://ai-sitemap-builder-production.up.railway.app
+- **Dashboard:** https://railway.com/project/106d11fa-150b-4b65-b8a8-3ec551d4a3f3
+- **Status:** Active ✅
 
 ```bash
 # Install Railway CLI
@@ -122,10 +130,10 @@ npm i -g @railway/cli
 # Login to Railway
 railway login
 
-# Link to project (first time)
-railway link
+# Link to project (already linked)
+railway link --project 106d11fa-150b-4b65-b8a8-3ec551d4a3f3
 
-# Deploy manually (usually auto-deploys on push)
+# Deploy manually (auto-deploys on git push)
 railway up
 
 # View logs
@@ -135,14 +143,14 @@ railway logs
 railway open
 ```
 
-### Environment Variables in Railway
+### Environment Variables in Railway (Already Configured ✅)
 
-Set these in Railway dashboard (Project → Variables):
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `CLAUDE_API_KEY`
-- `NEXT_PUBLIC_APP_URL` (set to Railway-provided domain)
+All environment variables have been set in Railway:
+- ✅ `NEXT_PUBLIC_SUPABASE_URL` → https://yvwxzybnyjnorsaqpkpa.supabase.co
+- ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY` → Configured
+- ✅ `SUPABASE_SERVICE_ROLE_KEY` → Configured
+- ⚠️ `CLAUDE_API_KEY` → Placeholder (update when ready)
+- ✅ `NEXT_PUBLIC_APP_URL` → https://ai-sitemap-builder-production.up.railway.app
 
 ## Supabase Setup
 
