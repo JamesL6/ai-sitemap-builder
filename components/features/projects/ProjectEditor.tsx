@@ -10,7 +10,7 @@ import { SitemapToolbar } from '@/components/features/sitemap/SitemapToolbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, CheckCircle, ArrowRight } from 'lucide-react'
 import { matrixToSitemapNodes, generateMatrixFromStructure, calculateMatrixSizeFromStructure, validateMatrixFromStructure } from '@/lib/utils/matrix'
-import { extractAllPages, extractMultiplyPages } from '@/lib/utils/template-helpers'
+import { extractAllPages, extractAllPagesWithUrls, extractMultiplyPages } from '@/lib/utils/template-helpers'
 import type { Project, Template, TemplateStructure, Location } from '@/types/database'
 
 interface CrawledPage {
@@ -69,7 +69,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     setIsComparing(true)
     try {
       const crawlData = project.crawl_data as any
-      const templatePages = extractAllPages(templateStructure)
+      const templatePages = extractAllPagesWithUrls(templateStructure)
       
       const response = await fetch('/api/ai/compare', {
         method: 'POST',
@@ -302,7 +302,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-medium text-blue-900">Ready to Compare</p>
                   <p className="text-sm text-blue-700 mt-1">
-                    {extractAllPages(templateStructure).length} template pages vs {crawlData?.pages?.length || 0} crawled pages
+                    {extractAllPagesWithUrls(templateStructure).length} template pages vs {crawlData?.pages?.length || 0} crawled pages
                   </p>
                 </div>
                 <Button onClick={handleCompare} disabled={isComparing} className="w-full">

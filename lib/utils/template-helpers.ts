@@ -46,7 +46,8 @@ export function extractMultiplyPages(structure: TemplateStructure): MultiplyPage
 }
 
 /**
- * Find all pages at any depth (for comparison)
+ * Find all pages at any depth (for comparison) - returns titles only
+ * @deprecated Use extractAllPagesWithUrls for better AI matching
  */
 export function extractAllPages(structure: TemplateStructure): string[] {
   const pages: string[] = []
@@ -54,6 +55,28 @@ export function extractAllPages(structure: TemplateStructure): string[] {
   function traverse(pageArray: TemplatePage[]) {
     for (const page of pageArray) {
       pages.push(page.title)
+      if (page.children && page.children.length > 0) {
+        traverse(page.children)
+      }
+    }
+  }
+
+  traverse(structure.pages || [])
+  return pages
+}
+
+/**
+ * Find all pages at any depth with titles AND URL patterns (for better AI comparison)
+ */
+export function extractAllPagesWithUrls(structure: TemplateStructure): Array<{ title: string; url_pattern: string }> {
+  const pages: Array<{ title: string; url_pattern: string }> = []
+
+  function traverse(pageArray: TemplatePage[]) {
+    for (const page of pageArray) {
+      pages.push({
+        title: page.title,
+        url_pattern: page.url_pattern
+      })
       if (page.children && page.children.length > 0) {
         traverse(page.children)
       }

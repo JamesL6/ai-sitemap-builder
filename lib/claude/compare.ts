@@ -13,7 +13,7 @@ export interface ComparisonResult extends ParsedComparison {
  * Compare template pages with client pages using Claude AI
  */
 export async function comparePages(
-  templatePages: string[],
+  templatePages: Array<{ title: string; url_pattern: string }>,
   clientPages: Array<{ title: string; url: string }>
 ): Promise<ComparisonResult> {
   // Build prompt

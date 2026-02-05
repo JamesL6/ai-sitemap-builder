@@ -12,7 +12,7 @@ export interface PageMatch {
 }
 
 export interface ComparisonPromptData {
-  templatePages: string[]
+  templatePages: Array<{ title: string; url_pattern: string }>
   clientPages: Array<{ title: string; url: string }>
 }
 
@@ -23,7 +23,7 @@ export function buildComparisonPrompt(data: ComparisonPromptData): string {
   return `You are analyzing a website's sitemap to match pages with a template structure.
 
 **Template Pages (Expected):**
-${data.templatePages.map((page, i) => `${i + 1}. ${page}`).join('\n')}
+${data.templatePages.map((page, i) => `${i + 1}. ${page.title} - ${page.url_pattern}`).join('\n')}
 
 **Client Pages (From their website):**
 ${data.clientPages.map((page, i) => `${i + 1}. ${page.title} - ${page.url}`).join('\n')}
@@ -38,8 +38,9 @@ Compare the template pages with the client's actual pages and identify:
 **Rules:**
 - Be smart about semantic matching (e.g., "Water Damage Services" matches "Water Damage Restoration")
 - Ignore differences in capitalization and minor wording variations
-- Consider URL patterns as hints but prioritize page titles
-- Assign confidence scores (0.0-1.0) to each match
+- Consider BOTH titles AND URL patterns for matching (e.g., template "/water-damage" likely matches client "/water-damage-services")
+- URL structure similarity is a strong signal (e.g., both having /services/plumbing or similar paths)
+- Assign confidence scores (0.0-1.0) to each match based on both title AND URL similarity
 - Only include matches with confidence >= 0.6 in the "matches" array
 - Put lower-confidence potential matches (0.4-0.59) in "uncertain"
 
