@@ -1,69 +1,79 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback } from 'react'
-import { WireframeNode, WireframeNodeData } from './WireframeNode'
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { ZoomIn, ZoomOut, Maximize2, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { SitemapNode, ComparisonResult } from '@/types/database'
+import type { SitemapNode, ComparisonResult, PageType } from '@/types/database'
+import type { NodeStatus } from './WireframeNode'
 
 interface WireframeTreeProps {
   nodes: SitemapNode[]
   comparisonResult?: ComparisonResult | null
-  onNodeClick?: (node: WireframeNodeData) => void
+  onNodeClick?: (node: TreeNode) => void
 }
 
-interface TreeNode extends WireframeNodeData {
+export interface TreeNode {
+  id: string
+  title: string
+  url?: string | null
+  pageType: PageType
+  source: 'template' | 'client'
+  status: NodeStatus
+  confidence?: number
+  clientOriginalUrl?: string | null
   children: TreeNode[]
-  depth: number
-  index: number
-  x?: number
-  y?: number
+  // Layout props (set during positioning)
+  x: number
+  y: number
+  subtreeWidth: number
+  collapsed: boolean
 }
 
-// Constants for layout
-const NODE_WIDTH = 240
-const NODE_HEIGHT = 100
-const HORIZONTAL_GAP = 80
-const VERTICAL_GAP = 24
-const PADDING = 40
+// Layout constants
+const NODE_W = 180
+const NODE_H = 64
+const H_GAP = 24 // horizontal gap between sibling nodes
+const V_GAP = 60 // vertical gap between levels
+const PADDING = 60
+
+// Status color mapping for inline use
+const STATUS_COLORS: Record<NodeStatus, { bg: string; border: string; text: string; dot: string }> = {
+  'matched':       { bg: '#f0fdf4', border: '#86efac', text: '#166534', dot: '#22c55e' },
+  'template-only': { bg: '#eff6ff', border: '#93c5fd', text: '#1e3a8a', dot: '#3b82f6' },
+  'client-only':   { bg: '#fff7ed', border: '#fdba74', text: '#9a3412', dot: '#f97316' },
+  'uncertain':     { bg: '#f9fafb', border: '#d1d5db', text: '#1f2937', dot: '#9ca3af' },
+}
 
 export function WireframeTree({ nodes, comparisonResult, onNodeClick }: WireframeTreeProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
+  const [scale, setScale] = useState(0.7)
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
 
-  // Build tree structure from flat array
-  const buildTree = useCallback((): TreeNode[] => {
+  // Build tree structure from flat node array
+  const rootNodes = useMemo((): TreeNode[] => {
     const nodeMap = new Map<string, TreeNode>()
-    
-    // Create tree nodes with status info from comparison result
+
+    // Create TreeNode objects
     nodes.forEach(node => {
-      let status: WireframeNodeData['status'] = node.source === 'template' ? 'template-only' : 'client-only'
+      let status: NodeStatus = node.source === 'template' ? 'template-only' : 'client-only'
       let confidence: number | undefined
-      
+
       if (comparisonResult) {
-        // Check if matched
         const match = comparisonResult.matches.find(
           m => m.template_page.toLowerCase() === node.title.toLowerCase()
         )
-        if (match) {
-          status = 'matched'
-          confidence = match.confidence
-        }
-        
-        // Check if uncertain
+        if (match) { status = 'matched'; confidence = match.confidence }
+
         const uncertain = comparisonResult.uncertain.find(
           u => u.template_page.toLowerCase() === node.title.toLowerCase()
         )
-        if (uncertain) {
-          status = 'uncertain'
-          confidence = uncertain.confidence
-        }
+        if (uncertain) { status = 'uncertain'; confidence = uncertain.confidence }
       }
-      
+
       nodeMap.set(node.id, {
         id: node.id,
         title: node.title,
@@ -74,171 +84,175 @@ export function WireframeTree({ nodes, comparisonResult, onNodeClick }: Wirefram
         confidence,
         clientOriginalUrl: node.client_original_url,
         children: [],
-        depth: 0,
-        index: 0
+        x: 0, y: 0,
+        subtreeWidth: 0,
+        collapsed: false,
       })
     })
 
-    // Build parent-child relationships
-    const rootNodes: TreeNode[] = []
-    nodes.forEach(node => {
-      const treeNode = nodeMap.get(node.id)!
-      if (node.parent_id && nodeMap.has(node.parent_id)) {
-        const parent = nodeMap.get(node.parent_id)!
-        parent.children.push(treeNode)
+    // Build parent-child edges
+    const roots: TreeNode[] = []
+    nodes.forEach(n => {
+      const treeNode = nodeMap.get(n.id)!
+      if (n.parent_id && nodeMap.has(n.parent_id)) {
+        nodeMap.get(n.parent_id)!.children.push(treeNode)
       } else {
-        rootNodes.push(treeNode)
+        roots.push(treeNode)
       }
     })
 
     // Sort children by position
-    const sortChildren = (node: TreeNode) => {
-      node.children.sort((a, b) => {
-        const aNode = nodes.find(n => n.id === a.id)
-        const bNode = nodes.find(n => n.id === b.id)
-        return (aNode?.position || 0) - (bNode?.position || 0)
+    const sortAll = (tn: TreeNode) => {
+      tn.children.sort((a, b) => {
+        const aN = nodes.find(x => x.id === a.id)
+        const bN = nodes.find(x => x.id === b.id)
+        return (aN?.position || 0) - (bN?.position || 0)
       })
-      node.children.forEach(sortChildren)
+      tn.children.forEach(sortAll)
     }
-    rootNodes.forEach(sortChildren)
+    roots.forEach(sortAll)
 
-    return rootNodes
+    return roots
   }, [nodes, comparisonResult])
 
-  // Calculate positions for each node
-  const calculatePositions = useCallback((rootNodes: TreeNode[]): { nodes: TreeNode[], width: number, height: number } => {
-    let maxX = 0
-    let maxY = 0
-    
-    const assignPositions = (node: TreeNode, depth: number, startY: number): number => {
-      node.depth = depth
-      node.x = PADDING + depth * (NODE_WIDTH + HORIZONTAL_GAP)
-      
+  // Position tree nodes top-to-bottom, centered
+  const layout = useMemo(() => {
+    // Deep clone so we don't mutate memoised rootNodes each render
+    const clone = (n: TreeNode): TreeNode => ({
+      ...n,
+      collapsed: collapsedIds.has(n.id),
+      children: collapsedIds.has(n.id) ? [] : n.children.map(clone),
+    })
+    const roots = rootNodes.map(clone)
+
+    // Pass 1 – measure subtree widths (bottom-up)
+    const measure = (node: TreeNode) => {
       if (node.children.length === 0) {
-        node.y = startY
-        maxX = Math.max(maxX, (node.x || 0) + NODE_WIDTH)
-        maxY = Math.max(maxY, (node.y || 0) + NODE_HEIGHT)
-        return startY + NODE_HEIGHT + VERTICAL_GAP
+        node.subtreeWidth = NODE_W
+        return
       }
+      node.children.forEach(measure)
+      const childrenWidth = node.children.reduce((sum, c) => sum + c.subtreeWidth, 0)
+        + H_GAP * (node.children.length - 1)
+      node.subtreeWidth = Math.max(NODE_W, childrenWidth)
+    }
+    roots.forEach(measure)
 
-      let currentY = startY
-      node.children.forEach((child, index) => {
-        child.index = index
-        currentY = assignPositions(child, depth + 1, currentY)
+    // Total width of all roots side-by-side
+    const totalRootWidth = roots.reduce((s, r) => s + r.subtreeWidth, 0)
+      + H_GAP * Math.max(0, roots.length - 1)
+
+    // Pass 2 – assign x,y (top-down)
+    const assign = (node: TreeNode, cx: number, level: number) => {
+      node.x = cx - NODE_W / 2
+      node.y = PADDING + level * (NODE_H + V_GAP)
+
+      if (node.children.length === 0) return
+
+      const childrenWidth = node.children.reduce((s, c) => s + c.subtreeWidth, 0)
+        + H_GAP * (node.children.length - 1)
+      let startX = cx - childrenWidth / 2
+
+      node.children.forEach(child => {
+        const childCx = startX + child.subtreeWidth / 2
+        assign(child, childCx, level + 1)
+        startX += child.subtreeWidth + H_GAP
       })
-
-      // Center parent vertically among its children
-      const firstChild = node.children[0]
-      const lastChild = node.children[node.children.length - 1]
-      node.y = ((firstChild.y || 0) + (lastChild.y || 0)) / 2
-      
-      maxX = Math.max(maxX, (node.x || 0) + NODE_WIDTH)
-      maxY = Math.max(maxY, (node.y || 0) + NODE_HEIGHT)
-      
-      return currentY
     }
 
-    let currentY = PADDING
-    rootNodes.forEach((root, index) => {
-      root.index = index
-      currentY = assignPositions(root, 0, currentY)
-    })
+    let startX = PADDING + totalRootWidth / 2
+    if (roots.length > 1) {
+      let runX = PADDING
+      roots.forEach(root => {
+        const cx = runX + root.subtreeWidth / 2
+        assign(root, cx, 0)
+        runX += root.subtreeWidth + H_GAP
+      })
+    } else if (roots.length === 1) {
+      assign(roots[0], startX, 0)
+    }
+
+    // Collect flat list + connectors
+    const flatNodes: TreeNode[] = []
+    const connectors: { x1: number; y1: number; x2: number; y2: number }[] = []
+    let maxX = 0, maxY = 0
+
+    const collect = (node: TreeNode) => {
+      flatNodes.push(node)
+      maxX = Math.max(maxX, node.x + NODE_W)
+      maxY = Math.max(maxY, node.y + NODE_H)
+      node.children.forEach(child => {
+        connectors.push({
+          x1: node.x + NODE_W / 2,
+          y1: node.y + NODE_H,
+          x2: child.x + NODE_W / 2,
+          y2: child.y,
+        })
+        collect(child)
+      })
+    }
+    roots.forEach(collect)
 
     return {
-      nodes: rootNodes,
+      flatNodes,
+      connectors,
       width: maxX + PADDING,
-      height: maxY + PADDING
+      height: maxY + PADDING,
     }
-  }, [])
+  }, [rootNodes, collapsedIds])
 
-  // Generate SVG paths for connectors
-  const generateConnectors = useCallback((rootNodes: TreeNode[]): string[] => {
-    const paths: string[] = []
-    
-    const traverse = (node: TreeNode) => {
-      node.children.forEach(child => {
-        const startX = (node.x || 0) + NODE_WIDTH
-        const startY = (node.y || 0) + NODE_HEIGHT / 2
-        const endX = child.x || 0
-        const endY = (child.y || 0) + NODE_HEIGHT / 2
-        
-        // Create smooth bezier curve
-        const midX = startX + (endX - startX) / 2
-        paths.push(`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`)
-        
-        traverse(child)
-      })
-    }
-    
-    rootNodes.forEach(traverse)
-    return paths
-  }, [])
-
-  const tree = buildTree()
-  const { nodes: positionedTree, width, height } = calculatePositions(tree)
-  const connectors = generateConnectors(positionedTree)
-
-  // Flatten tree for rendering
-  const flattenTree = (nodes: TreeNode[]): TreeNode[] => {
-    const result: TreeNode[] = []
-    const traverse = (node: TreeNode) => {
-      result.push(node)
-      node.children.forEach(traverse)
-    }
-    nodes.forEach(traverse)
-    return result
+  // Toggle collapse
+  const toggleCollapse = (id: string) => {
+    setCollapsedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
-  const flatNodes = flattenTree(positionedTree)
-
-  // Handle zoom
-  const handleZoomIn = () => setScale(s => Math.min(s + 0.2, 2))
-  const handleZoomOut = () => setScale(s => Math.max(s - 0.2, 0.3))
+  // Zoom
+  const handleZoomIn = () => setScale(s => Math.min(s + 0.15, 2.5))
+  const handleZoomOut = () => setScale(s => Math.max(s - 0.15, 0.15))
   const handleReset = () => {
-    setScale(1)
+    if (!containerRef.current) return
+    const cw = containerRef.current.clientWidth
+    const ch = containerRef.current.clientHeight
+    const fitScale = Math.min(cw / layout.width, ch / layout.height, 1)
+    setScale(Math.max(fitScale * 0.9, 0.15))
     setTranslate({ x: 0, y: 0 })
   }
 
-  // Handle panning
+  // Pan
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return
     setIsDragging(true)
     setDragStart({ x: e.clientX - translate.x, y: e.clientY - translate.y })
   }
-
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return
-    setTranslate({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    })
+    setTranslate({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
   }
+  const handleMouseUp = () => setIsDragging(false)
 
-  const handleMouseUp = () => {
-    setIsDragging(false)
-  }
-
-  const handleNodeClick = (node: WireframeNodeData) => {
-    setSelectedNodeId(node.id)
-    onNodeClick?.(node)
-  }
-
-  // Handle wheel zoom
+  // Wheel zoom
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const handleWheel = (e: WheelEvent) => {
+    const el = containerRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault()
-        const delta = e.deltaY > 0 ? -0.1 : 0.1
-        setScale(s => Math.min(Math.max(s + delta, 0.3), 2))
+        setScale(s => Math.min(Math.max(s + (e.deltaY > 0 ? -0.08 : 0.08), 0.15), 2.5))
       }
     }
-
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    return () => container.removeEventListener('wheel', handleWheel)
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
   }, [])
+
+  // Auto-fit on first render
+  useEffect(() => {
+    if (layout.flatNodes.length > 0) handleReset()
+  }, [layout.flatNodes.length])
 
   if (nodes.length === 0) {
     return (
@@ -248,51 +262,59 @@ export function WireframeTree({ nodes, comparisonResult, onNodeClick }: Wirefram
     )
   }
 
+  // Check which nodes have children in the original tree (before collapse)
+  const hasOriginalChildren = new Set<string>()
+  const markHasChildren = (n: TreeNode) => {
+    if (n.children.length > 0) hasOriginalChildren.add(n.id)
+    n.children.forEach(markHasChildren)
+  }
+  rootNodes.forEach(markHasChildren)
+
   return (
-    <div className="relative w-full h-[600px] bg-muted/30 rounded-lg overflow-hidden border">
+    <div className="relative w-full h-[700px] bg-[#fafbfc] rounded-lg overflow-hidden border">
       {/* Toolbar */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2 bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-sm">
-        <Button variant="outline" size="sm" onClick={handleZoomOut}>
-          <ZoomOut className="h-4 w-4" />
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-sm border">
+        <Button variant="ghost" size="sm" onClick={handleZoomOut} className="h-7 w-7 p-0">
+          <ZoomOut className="h-3.5 w-3.5" />
         </Button>
-        <span className="flex items-center px-2 text-sm text-muted-foreground min-w-[50px] justify-center">
+        <span className="text-xs text-muted-foreground min-w-[40px] text-center">
           {Math.round(scale * 100)}%
         </span>
-        <Button variant="outline" size="sm" onClick={handleZoomIn}>
-          <ZoomIn className="h-4 w-4" />
+        <Button variant="ghost" size="sm" onClick={handleZoomIn} className="h-7 w-7 p-0">
+          <ZoomIn className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="outline" size="sm" onClick={handleReset}>
-          <Maximize2 className="h-4 w-4" />
+        <div className="w-px h-4 bg-border mx-0.5" />
+        <Button variant="ghost" size="sm" onClick={handleReset} className="h-7 w-7 p-0">
+          <Maximize2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       {/* Legend */}
-      <div className="absolute top-4 left-4 z-10 bg-background/80 backdrop-blur-sm rounded-lg p-3 shadow-sm">
-        <p className="text-xs font-medium mb-2">Legend</p>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-green-300 border border-green-400" />
-            <span className="text-xs text-muted-foreground">Matched</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-blue-300 border border-blue-400" />
-            <span className="text-xs text-muted-foreground">Template Only</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-orange-300 border border-orange-400" />
-            <span className="text-xs text-muted-foreground">Client Only</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-gray-300 border border-gray-400" />
-            <span className="text-xs text-muted-foreground">Uncertain</span>
-          </div>
+      <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-lg p-2.5 shadow-sm border">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {[
+            { label: 'Matched', color: '#22c55e' },
+            { label: 'Template', color: '#3b82f6' },
+            { label: 'Client', color: '#f97316' },
+            { label: 'Uncertain', color: '#9ca3af' },
+          ].map(({ label, color }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+              <span className="text-[10px] text-muted-foreground">{label}</span>
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* Page count */}
+      <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border">
+        <span className="text-xs text-muted-foreground">{nodes.length} pages</span>
       </div>
 
       {/* Canvas */}
       <div
         ref={containerRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        className="w-full h-full cursor-grab active:cursor-grabbing select-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -302,46 +324,116 @@ export function WireframeTree({ nodes, comparisonResult, onNodeClick }: Wirefram
           style={{
             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
             transformOrigin: 'top left',
-            width: width,
-            height: height,
-            position: 'relative'
+            width: layout.width,
+            height: layout.height,
+            position: 'relative',
           }}
         >
-          {/* SVG Connectors */}
+          {/* SVG connectors */}
           <svg
-            className="absolute top-0 left-0 pointer-events-none"
-            style={{ width: width, height: height }}
+            className="absolute inset-0 pointer-events-none"
+            width={layout.width}
+            height={layout.height}
           >
-            {connectors.map((path, index) => (
-              <path
-                key={index}
-                d={path}
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            ))}
+            {layout.connectors.map((c, i) => {
+              const midY = c.y1 + (c.y2 - c.y1) * 0.45
+              return (
+                <path
+                  key={i}
+                  d={`M ${c.x1} ${c.y1} C ${c.x1} ${midY}, ${c.x2} ${midY}, ${c.x2} ${c.y2}`}
+                  fill="none"
+                  stroke="#cbd5e1"
+                  strokeWidth="1.5"
+                />
+              )
+            })}
           </svg>
 
-          {/* Nodes */}
-          {flatNodes.map(node => (
-            <div
-              key={node.id}
-              className="absolute"
-              style={{
-                left: node.x,
-                top: node.y,
-                width: NODE_WIDTH
-              }}
-            >
-              <WireframeNode
-                node={node}
-                onClick={handleNodeClick}
-                isSelected={selectedNodeId === node.id}
-              />
-            </div>
-          ))}
+          {/* Node cards */}
+          {layout.flatNodes.map(node => {
+            const colors = STATUS_COLORS[node.status]
+            const isSelected = selectedNodeId === node.id
+            const isCollapsed = collapsedIds.has(node.id)
+            const canCollapse = hasOriginalChildren.has(node.id)
+
+            return (
+              <div
+                key={node.id}
+                className="absolute transition-shadow duration-150"
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  width: NODE_W,
+                  height: NODE_H,
+                }}
+              >
+                <div
+                  onClick={() => {
+                    setSelectedNodeId(node.id)
+                    onNodeClick?.(node)
+                  }}
+                  className="h-full rounded-lg border-2 px-3 py-2 cursor-pointer transition-all hover:shadow-md flex flex-col justify-center relative"
+                  style={{
+                    backgroundColor: colors.bg,
+                    borderColor: isSelected ? '#6366f1' : colors.border,
+                    boxShadow: isSelected ? '0 0 0 2px rgba(99,102,241,0.3)' : undefined,
+                  }}
+                >
+                  {/* Status dot */}
+                  <div
+                    className="absolute top-2 right-2 w-2 h-2 rounded-full"
+                    style={{ backgroundColor: colors.dot }}
+                  />
+
+                  {/* Title */}
+                  <p
+                    className="text-xs font-semibold leading-tight truncate pr-4"
+                    style={{ color: colors.text }}
+                    title={node.title}
+                  >
+                    {node.title}
+                  </p>
+
+                  {/* URL */}
+                  {node.url && (
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5" title={node.url}>
+                      {node.url}
+                    </p>
+                  )}
+
+                  {/* Confidence badge */}
+                  {node.confidence !== undefined && (
+                    <span
+                      className="text-[9px] font-medium mt-1 self-start px-1 py-px rounded"
+                      style={{ backgroundColor: colors.border, color: colors.text }}
+                    >
+                      {Math.round(node.confidence * 100)}%
+                    </span>
+                  )}
+
+                  {/* Collapse toggle */}
+                  {canCollapse && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleCollapse(node.id)
+                      }}
+                      className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white border border-slate-300 flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:border-slate-400 z-10 text-xs"
+                      title={isCollapsed ? 'Expand children' : 'Collapse children'}
+                    >
+                      {isCollapsed ? `+${rootNodes.reduce((count, r) => {
+                        const find = (n: TreeNode): number => {
+                          if (n.id === node.id) return n.children.length
+                          return n.children.reduce((s, c) => s + find(c), 0)
+                        }
+                        return count + find(r)
+                      }, 0)}` : '−'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
