@@ -61,7 +61,7 @@
   - Docs to update: None
   - Dependencies: 1.8
 
-- [ ] **1.10:** Set up GitHub repository
+- [x] **1.10:** Set up GitHub repository
   - Files: `.gitignore`, `README.md`
   - Docs to update: None
   - Dependencies: 1.1
