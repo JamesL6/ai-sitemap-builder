@@ -201,8 +201,9 @@ export interface TemplatePage {
   id: string
   title: string
   url_pattern: string
-  is_service?: boolean
+  is_service?: boolean // DEPRECATED: use multiply_in_matrix instead
   is_location_parent?: boolean
+  multiply_in_matrix?: boolean // If true, this page gets multiplied by locations (e.g., "Miami Water Damage")
   children?: TemplatePage[]
 }
 

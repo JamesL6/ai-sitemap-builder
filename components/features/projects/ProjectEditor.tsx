@@ -11,8 +11,9 @@ import { SitemapViewer } from '@/components/features/sitemap/SitemapViewer'
 import { SitemapToolbar } from '@/components/features/sitemap/SitemapToolbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, CheckCircle } from 'lucide-react'
-import { calculateMatrixSize, validateMatrixInputs, generateMatrix, matrixToSitemapNodes } from '@/lib/utils/matrix'
+import { calculateMatrixSize, validateMatrixInputs, generateMatrix, matrixToSitemapNodes, generateMatrixFromStructure, calculateMatrixSizeFromStructure, validateMatrixFromStructure } from '@/lib/utils/matrix'
 import { extractTemplatePages } from '@/lib/claude/compare'
+import { extractAllPages } from '@/lib/utils/template-helpers'
 import type { Project, Template, TemplateStructure, TemplateService, ServiceConfig as ServiceConfigType, Location } from '@/types/database'
 
 interface ProjectEditorProps {
@@ -44,7 +45,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     setIsComparing(true)
     try {
       const crawlData = project.crawl_data as any
-      const templatePages = extractTemplatePages(templateStructure)
+      const templatePages = extractAllPages(templateStructure)
       
       const response = await fetch('/api/ai/compare', {
         method: 'POST',
@@ -74,22 +75,23 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
 
   // Handle matrix generation
   const handleGenerateMatrix = async () => {
-    const validation = validateMatrixInputs(locations, servicesConfig)
+    // Use new structure-based validation
+    const validation = validateMatrixFromStructure(locations, templateStructure)
     if (!validation.valid) {
       alert(validation.error)
       return
     }
 
-    const matrixSize = calculateMatrixSize(locations, servicesConfig)
-    if (!confirm(`This will generate ${matrixSize} pages. Continue?`)) {
+    const matrixSize = calculateMatrixSizeFromStructure(locations, templateStructure)
+    if (!confirm(`This will generate ${matrixSize} location-based pages. Continue?`)) {
       return
     }
 
     setIsGenerating(true)
     try {
-      // Generate matrix
-      const urlPattern = template?.url_patterns?.service_location as string || '/{location_slug}-{service_slug}'
-      const matrixNodes = generateMatrix(locations, servicesConfig, templateServices, urlPattern)
+      // Generate matrix using new structure-based approach
+      const urlPattern = template?.url_patterns?.service_location as string || '/{location_slug}-{page_slug}'
+      const matrixNodes = generateMatrixFromStructure(locations, templateStructure, urlPattern)
       const sitemapNodes = matrixToSitemapNodes(matrixNodes, project.id)
 
       // Save to database
@@ -168,8 +170,8 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     )
   }
 
-  const matrixSize = calculateMatrixSize(locations, servicesConfig)
-  const canGenerate = locations.length > 0 && servicesConfig.some(c => c.enabled)
+  const matrixSize = calculateMatrixSizeFromStructure(locations, templateStructure)
+  const canGenerate = locations.length > 0
 
   return (
     <Tabs defaultValue="crawl" className="space-y-4">
@@ -207,7 +209,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
             ) : (
               <div className="space-y-4">
                 <p className="text-sm">
-                  Ready to compare {extractTemplatePages(templateStructure).length} template pages
+                  Ready to compare {extractAllPages(templateStructure).length} template pages
                   with {(project.crawl_data as any).pages?.length || 0} crawled pages
                 </p>
                 <Button onClick={handleCompare} disabled={isComparing}>
@@ -256,8 +258,10 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-medium text-blue-900">Matrix Preview</p>
                   <p className="text-sm text-blue-700 mt-1">
-                    {locations.length} location{locations.length !== 1 ? 's' : ''} ×{' '}
-                    {servicesConfig.filter(c => c.enabled).length} service{servicesConfig.filter(c => c.enabled).length !== 1 ? 's' : ''} = {matrixSize} pages
+                    {locations.length} location{locations.length !== 1 ? 's' : ''} × pages marked for multiplication = {matrixSize} total pages
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Each page marked "Multiply by locations" in the template will generate {locations.length} location variant{locations.length !== 1 ? 's' : ''}
                   </p>
                 </div>
 

@@ -77,12 +77,12 @@ function PageNode({
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id={`${page.id}-service`}
-                  checked={page.is_service || false}
-                  onCheckedChange={(checked) => onUpdate(page.id, { is_service: checked as boolean })}
+                  id={`${page.id}-multiply`}
+                  checked={page.multiply_in_matrix || page.is_service || false}
+                  onCheckedChange={(checked) => onUpdate(page.id, { multiply_in_matrix: checked as boolean, is_service: checked as boolean })}
                 />
-                <label htmlFor={`${page.id}-service`} className="text-xs cursor-pointer">
-                  Service page
+                <label htmlFor={`${page.id}-multiply`} className="text-xs cursor-pointer">
+                  Multiply by locations
                 </label>
               </div>
               <div className="flex items-center space-x-2">
@@ -96,6 +96,10 @@ function PageNode({
                 </label>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {(page.multiply_in_matrix || page.is_service) && '📍 Will generate location variants (e.g., "Miami {title}")'}
+              {page.is_location_parent && '📍 Location pages will be added as children'}
+            </p>
           </div>
 
           <div className="flex gap-1">

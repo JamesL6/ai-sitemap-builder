@@ -56,7 +56,8 @@ function estimateTokens(prompt: string, response: string): number {
 }
 
 /**
- * Extract template pages from template structure
+ * Extract template pages from template structure (all pages at all depths)
+ * @deprecated Use extractAllPages from template-helpers instead
  */
 export function extractTemplatePages(templateStructure: { pages: any[] }): string[] {
   const pages: string[] = []

@@ -1,26 +1,75 @@
 /**
  * Location × Service matrix generator
- * Generates all combinations of locations and services for sitemap
+ * Generates all combinations of locations and multiply-enabled pages
  */
 
-import type { Location, ServiceConfig, SitemapNodeInsert } from '@/types/database'
+import type { Location, ServiceConfig, SitemapNodeInsert, TemplateStructure } from '@/types/database'
+import { extractMultiplyPages, type MultiplyPage } from './template-helpers'
 
 export interface MatrixNode {
   title: string
   url: string
-  page_type: 'service_location'
+  page_type: 'service_location' | 'location'
   source: 'template'
   position: number
   metadata: {
     location_id: string
-    service_id: string
+    service_id?: string
     location_name: string
-    service_name: string
+    service_name?: string
+    page_path?: string
   }
 }
 
 /**
- * Generate location × service matrix nodes
+ * Generate location-based pages from template structure
+ * Now supports multi-level hierarchies - any page can be multiplied
+ */
+export function generateMatrixFromStructure(
+  locations: Location[],
+  templateStructure: TemplateStructure,
+  urlPattern: string = '/{location_slug}-{page_slug}'
+): MatrixNode[] {
+  const nodes: MatrixNode[] = []
+  
+  // Get all pages marked for multiplication (at any depth)
+  const multiplyPages = extractMultiplyPages(templateStructure)
+
+  // Generate location variants for each multiply page
+  let position = 0
+  for (const location of locations) {
+    for (const page of multiplyPages) {
+      // Extract slug from URL pattern
+      const pageSlug = page.url_pattern.replace(/^\//, '').replace(/\//g, '-')
+      
+      const url = urlPattern
+        .replace('{location_slug}', location.url_slug)
+        .replace('{page_slug}', pageSlug)
+      
+      const title = `${location.name} ${page.title}`
+
+      nodes.push({
+        title,
+        url,
+        page_type: 'service_location',
+        source: 'template',
+        position: position++,
+        metadata: {
+          location_id: location.id,
+          service_id: page.id,
+          location_name: location.name,
+          service_name: page.title,
+          page_path: page.path.length > 0 ? page.path.join(' > ') : undefined
+        }
+      })
+    }
+  }
+
+  return nodes
+}
+
+/**
+ * LEGACY: Generate matrix from services list (backward compatibility)
  */
 export function generateMatrix(
   locations: Location[],
@@ -90,7 +139,18 @@ export function matrixToSitemapNodes(
 }
 
 /**
- * Calculate how many pages the matrix will generate
+ * Calculate how many pages the matrix will generate from template structure
+ */
+export function calculateMatrixSizeFromStructure(
+  locations: Location[],
+  templateStructure: TemplateStructure
+): number {
+  const multiplyPages = extractMultiplyPages(templateStructure)
+  return locations.length * multiplyPages.length
+}
+
+/**
+ * LEGACY: Calculate matrix size from services config
  */
 export function calculateMatrixSize(
   locations: Location[],
@@ -101,7 +161,34 @@ export function calculateMatrixSize(
 }
 
 /**
- * Validate matrix generation inputs
+ * Validate matrix generation from template structure
+ */
+export function validateMatrixFromStructure(
+  locations: Location[],
+  templateStructure: TemplateStructure
+): { valid: boolean; error?: string } {
+  if (locations.length === 0) {
+    return { valid: false, error: 'At least one location is required' }
+  }
+
+  const multiplyPages = extractMultiplyPages(templateStructure)
+  if (multiplyPages.length === 0) {
+    return { valid: false, error: 'At least one page must be marked to multiply by locations' }
+  }
+
+  const matrixSize = calculateMatrixSizeFromStructure(locations, templateStructure)
+  if (matrixSize > 1000) {
+    return { 
+      valid: false, 
+      error: `Matrix would generate ${matrixSize} pages. Maximum is 1000. Please reduce locations or pages.`
+    }
+  }
+
+  return { valid: true }
+}
+
+/**
+ * LEGACY: Validate matrix inputs from services config
  */
 export function validateMatrixInputs(
   locations: Location[],

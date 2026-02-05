@@ -78,7 +78,21 @@ erDiagram
           "id": "water-damage",
           "title": "Water Damage Restoration",
           "url_pattern": "/water-damage",
-          "is_service": true
+          "multiply_in_matrix": true,
+          "children": [
+            {
+              "id": "flood-cleanup",
+              "title": "Flood Damage Cleanup",
+              "url_pattern": "/water-damage/flood-cleanup",
+              "multiply_in_matrix": true
+            },
+            {
+              "id": "water-extraction",
+              "title": "Water Extraction",
+              "url_pattern": "/water-damage/water-extraction",
+              "multiply_in_matrix": false
+            }
+          ]
         }
       ]
     },
@@ -92,6 +106,11 @@ erDiagram
   ]
 }
 ```
+
+**Page Flags:**
+- `multiply_in_matrix` (boolean): If true, generates location variants (e.g., "Miami Water Damage Restoration"). Can be set at ANY depth in the hierarchy.
+- `is_location_parent` (boolean): Marks where location pages should be nested
+- `is_service` (boolean): DEPRECATED - use `multiply_in_matrix` instead
 
 **Services JSONB Schema:**
 ```json
