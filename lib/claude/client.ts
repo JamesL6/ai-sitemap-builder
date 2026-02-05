@@ -39,7 +39,6 @@ export async function sendMessage(
     const requestParams: any = {
       model: opts.model,
       max_tokens: opts.maxTokens,
-      temperature: opts.temperature,
       messages: messages.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -49,6 +48,12 @@ export async function sendMessage(
     // Add extended thinking if configured
     if (opts.thinking) {
       requestParams.thinking = opts.thinking
+      // When thinking is enabled, temperature must be 1 (or omitted as it defaults to 1)
+      // We explicitly set it to 1 to satisfy the API requirement
+      requestParams.temperature = 1
+    } else {
+      // Only set custom temperature if thinking is NOT enabled
+      requestParams.temperature = opts.temperature
     }
 
     // Use streaming to handle long-running requests (required for >10min or large thinking budgets)

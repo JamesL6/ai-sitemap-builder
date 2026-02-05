@@ -26,7 +26,7 @@ export async function comparePages(
   try {
     // Ask Claude with extended thinking for complex page matching
     const response = await askClaude(prompt, {
-      temperature: 0.3, // Lower temperature for more consistent matching
+      // temperature: 1, // Temperature is automatically set to 1 by the client when thinking is enabled
       maxTokens: 64000, // Maximum output tokens for comprehensive analysis
       thinking: {
         type: 'enabled',
