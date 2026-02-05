@@ -249,3 +249,35 @@ export type ProjectUpdate = Database['public']['Tables']['projects']['Update']
 export type SitemapNode = Database['public']['Tables']['sitemap_nodes']['Row']
 export type SitemapNodeInsert = Database['public']['Tables']['sitemap_nodes']['Insert']
 export type SitemapNodeUpdate = Database['public']['Tables']['sitemap_nodes']['Update']
+
+// =====================================================
+// COMPARISON RESULT TYPES
+// =====================================================
+
+export interface ComparisonMatch {
+  template_page: string
+  client_page: { title: string; url: string }
+  confidence: number
+}
+
+export interface ClientOnlyPage {
+  title: string
+  url: string
+  suggested_category?: string
+}
+
+export interface UncertainMatch {
+  template_page: string
+  client_page: { title: string; url: string }
+  confidence: number
+  reason?: string
+}
+
+export interface ComparisonResult {
+  matches: ComparisonMatch[]
+  template_only: string[]
+  client_only: ClientOnlyPage[]
+  uncertain: UncertainMatch[]
+  compared_at?: string
+  tokens_used?: number
+}

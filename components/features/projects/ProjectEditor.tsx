@@ -1,17 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CrawlForm } from '@/components/features/crawler/CrawlForm'
 import { LocationInput } from '@/components/features/locations/LocationInput'
 import { SitemapViewer } from '@/components/features/sitemap/SitemapViewer'
 import { SitemapToolbar } from '@/components/features/sitemap/SitemapToolbar'
+import { WireframeTree } from '@/components/features/sitemap/WireframeTree'
+import { ComparisonWireframe } from '@/components/features/sitemap/ComparisonWireframe'
+import { MergePanel } from '@/components/features/sitemap/MergePanel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, CheckCircle, ArrowRight } from 'lucide-react'
+import { Loader2, CheckCircle, ArrowRight, List, GitBranch } from 'lucide-react'
 import { matrixToSitemapNodes, generateMatrixFromStructure, calculateMatrixSizeFromStructure, validateMatrixFromStructure } from '@/lib/utils/matrix'
 import { extractAllPages, extractAllPagesWithUrls, extractMultiplyPages } from '@/lib/utils/template-helpers'
-import type { Project, Template, TemplateStructure, Location } from '@/types/database'
+import type { Project, Template, TemplateStructure, Location, SitemapNode, ComparisonResult } from '@/types/database'
 
 interface CrawledPage {
   url: string
@@ -34,10 +37,43 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
   const [activeTab, setActiveTab] = useState('crawl')
   const [crawlCompleted, setCrawlCompleted] = useState(!!project.crawl_data)
   const [generationDone, setGenerationDone] = useState(project.status === 'finalized')
+  const [viewMode, setViewMode] = useState<'list' | 'tree'>('list')
+  const [sitemapNodes, setSitemapNodes] = useState<SitemapNode[]>([])
+  const [isLoadingNodes, setIsLoadingNodes] = useState(false)
 
   const template = project.template
   const templateStructure = template?.structure as TemplateStructure || { pages: [] }
   const multiplyPages = extractMultiplyPages(templateStructure)
+  const comparisonResult = project.comparison_result as ComparisonResult | null
+
+  // Fetch sitemap nodes for tree view
+  const fetchSitemapNodes = async () => {
+    setIsLoadingNodes(true)
+    try {
+      const response = await fetch(`/api/projects/${project.id}/nodes`)
+      const result = await response.json()
+      if (result.success) {
+        setSitemapNodes(result.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch nodes:', err)
+    } finally {
+      setIsLoadingNodes(false)
+    }
+  }
+
+  // Fetch nodes when view tab is active or after generation
+  useEffect(() => {
+    if (activeTab === 'view' || generationDone) {
+      fetchSitemapNodes()
+    }
+  }, [activeTab, generationDone, refreshKey])
+
+  // Handle when a client page is added from merge panel
+  const handleClientPageAdded = () => {
+    fetchSitemapNodes()
+    setRefreshKey(prev => prev + 1)
+  }
 
   // Handle successful crawl - update local state and enable next step
   const handleCrawlSuccess = (pages: CrawledPage[]) => {
@@ -320,23 +356,42 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
           </CardContent>
         </Card>
 
-        {comparisonDone && (
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-800">
-                    AI Comparison complete!
-                  </span>
+        {comparisonDone && comparisonResult && (
+          <>
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800">
+                      AI Comparison complete!
+                    </span>
+                  </div>
+                  <Button onClick={() => goToNextTab('compare')} className="gap-2">
+                    Continue to Configure
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button onClick={() => goToNextTab('compare')} className="gap-2">
-                  Continue to Configure
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Comparison Results Visualization */}
+            <ComparisonWireframe
+              templateStructure={templateStructure}
+              comparisonResult={comparisonResult}
+            />
+
+            {/* Merge Panel for Client-Only Pages */}
+            {comparisonResult.client_only.length > 0 && (
+              <MergePanel
+                projectId={project.id}
+                comparisonResult={comparisonResult}
+                existingNodes={sitemapNodes}
+                onPageAdded={handleClientPageAdded}
+                onBulkAdd={handleClientPageAdded}
+              />
+            )}
+          </>
         )}
       </TabsContent>
 
@@ -465,8 +520,61 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
 
       {/* Step 5: View & Export */}
       <TabsContent value="view" className="space-y-4">
-        <SitemapToolbar projectId={project.id} nodeCount={nodeCount} />
-        <SitemapViewer projectId={project.id} key={refreshKey} onNodeCountUpdate={handleNodeCountUpdate} />
+        <div className="flex items-center justify-between">
+          <SitemapToolbar projectId={project.id} nodeCount={nodeCount} />
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="gap-2"
+            >
+              <List className="h-4 w-4" />
+              List
+            </Button>
+            <Button
+              variant={viewMode === 'tree' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('tree')}
+              className="gap-2"
+            >
+              <GitBranch className="h-4 w-4" />
+              Tree
+            </Button>
+          </div>
+        </div>
+
+        {viewMode === 'list' ? (
+          <SitemapViewer 
+            projectId={project.id} 
+            key={refreshKey} 
+            onNodeCountUpdate={handleNodeCountUpdate} 
+          />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Sitemap Tree View</CardTitle>
+              <CardDescription>
+                Visual wireframe representation of your sitemap structure
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingNodes ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <WireframeTree
+                  nodes={sitemapNodes}
+                  comparisonResult={comparisonResult}
+                  onNodeClick={(node) => console.log('Node clicked:', node)}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
       </TabsContent>
     </Tabs>
   )
