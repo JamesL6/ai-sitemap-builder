@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, CheckCircle, ArrowRight, List, GitBranch } from 'lucide-react'
 import { matrixToSitemapNodes, generateMatrixFromStructure, calculateMatrixSizeFromStructure, validateMatrixFromStructure } from '@/lib/utils/matrix'
 import { extractAllPages, extractAllPagesWithUrls, extractMultiplyPages } from '@/lib/utils/template-helpers'
-import type { Project, Template, TemplateStructure, Location, SitemapNode, ComparisonResult } from '@/types/database'
+import type { Project, Template, TemplateStructure, Location, SitemapNode, ComparisonResult, Json } from '@/types/database'
 
 interface CrawledPage {
   url: string
@@ -81,7 +81,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     // Update local project state with crawl data
     setProject(prev => ({
       ...prev,
-      crawl_data: { pages },
+      crawl_data: { pages } as unknown as Json,
       status: 'crawled' as const
     }))
   }
@@ -126,7 +126,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
       setComparisonDone(true)
       setProject(prev => ({
         ...prev,
-        comparison_result: result.data,
+        comparison_result: result.data as Json,
         status: 'compared' as const
       }))
     } catch (err) {
@@ -153,7 +153,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     setIsGenerating(true)
     try {
       // Generate matrix using new structure-based approach
-      const urlPattern = template?.url_patterns?.service_location as string || '/{location_slug}-{page_slug}'
+      const urlPattern = (template?.url_patterns as Record<string, string> | null)?.service_location || '/{location_slug}-{page_slug}'
       const matrixNodes = generateMatrixFromStructure(locations, templateStructure, urlPattern)
       const sitemapNodes = matrixToSitemapNodes(matrixNodes, project.id)
 

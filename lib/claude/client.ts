@@ -57,18 +57,18 @@ export async function sendMessage(
     }
 
     // Use streaming to handle long-running requests (required for >10min or large thinking budgets)
-    const stream = await anthropic.messages.create({
+    const stream = anthropic.messages.stream({
       ...requestParams,
-      stream: true,
     })
 
     let textContent = ''
 
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        textContent += event.delta.text
-      }
-    }
+    stream.on('text', (text) => {
+      textContent += text
+    })
+
+    // Wait for the stream to finish
+    await stream.finalMessage()
 
     if (textContent) {
       return textContent
