@@ -162,10 +162,32 @@ export function PageBuilder({ pages, onChange }: PageBuilderProps) {
   }
 
   const addChild = (parentId: string) => {
+    // Find parent page to get its URL pattern
+    let parentUrlPattern = '/new-page'
+    
+    const findParent = (pageList: TemplatePage[]): TemplatePage | null => {
+      for (const page of pageList) {
+        if (page.id === parentId) return page
+        if (page.children) {
+          const found = findParent(page.children)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    
+    const parent = findParent(pages)
+    if (parent) {
+      // Pre-fill with parent's URL pattern
+      parentUrlPattern = parent.url_pattern.endsWith('/') 
+        ? parent.url_pattern + 'new-page'
+        : parent.url_pattern + '/new-page'
+    }
+
     const newPage: TemplatePage = {
       id: `page-${Date.now()}`,
       title: 'New Page',
-      url_pattern: '/new-page',
+      url_pattern: parentUrlPattern,
       children: []
     }
 
