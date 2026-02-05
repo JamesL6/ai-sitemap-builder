@@ -159,10 +159,10 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
 
     setIsGenerating(true)
     try {
-      // Generate matrix using new structure-based approach
-      const urlPattern = (template?.url_patterns as Record<string, string> | null)?.service_location || '/{location_slug}-{page_slug}'
+      // Generate matrix using structure-based approach
+      // Service pages nest under location: /service-areas/{location}/{service-slug}
       const locationUrlPattern = (template?.url_patterns as Record<string, string> | null)?.location || '/service-areas/{location_slug}'
-      const matrixNodes = generateMatrixFromStructure(locations, templateStructure, urlPattern, locationUrlPattern)
+      const matrixNodes = generateMatrixFromStructure(locations, templateStructure, locationUrlPattern)
       const sitemapNodes = matrixToSitemapNodes(matrixNodes, project.id)
 
       // Save to database

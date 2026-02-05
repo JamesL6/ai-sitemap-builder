@@ -30,7 +30,6 @@ export interface MatrixNode {
 export function generateMatrixFromStructure(
   locations: Location[],
   templateStructure: TemplateStructure,
-  urlPattern: string = '/{location_slug}-{page_slug}',
   locationUrlPattern: string = '/service-areas/{location_slug}'
 ): MatrixNode[] {
   const nodes: MatrixNode[] = []
@@ -54,14 +53,17 @@ export function generateMatrixFromStructure(
       }
     })
 
-    // 2. Create location × service pages (e.g., "Miami Water Damage")
+    // 2. Create location × service pages nested under location landing page
+    // e.g., /service-areas/miami/water-damage-restoration
     for (const page of multiplyPages) {
-      // Extract slug from URL pattern
-      const pageSlug = page.url_pattern.replace(/^\//, '').replace(/\//g, '-')
+      // Extract clean slug from URL pattern (e.g., "/water-damage-restoration" → "water-damage-restoration")
+      const pageSlug = page.url_pattern
+        .replace(/^\//, '')        // remove leading /
+        .split('/')                // split path segments
+        .pop() || ''               // take the last segment (the leaf slug)
       
-      const url = urlPattern
-        .replace('{location_slug}', location.url_slug)
-        .replace('{page_slug}', pageSlug)
+      // Nest under location: /service-areas/{location}/{service-slug}
+      const url = `${locationUrl}/${pageSlug}`
       
       const title = `${location.name} ${page.title}`
 

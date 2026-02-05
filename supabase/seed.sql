@@ -33,7 +33,7 @@ INSERT INTO public.templates (id, name, description, structure, services, url_pa
     {"id": "faq", "title": "FAQ", "url_pattern": "/faq", "children": []}
   ]}',
   '[]',
-  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/{location_slug}-{page_slug}"}',
+  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/service-areas/{location_slug}/{page_slug}"}',
   true
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -75,7 +75,7 @@ INSERT INTO public.templates (id, name, description, structure, services, url_pa
     {"id": "contact", "title": "Contact Us", "url_pattern": "/contact", "children": []}
   ]}',
   '[]',
-  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/{location_slug}-{page_slug}"}',
+  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/service-areas/{location_slug}/{page_slug}"}',
   true
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -112,7 +112,7 @@ INSERT INTO public.templates (id, name, description, structure, services, url_pa
     {"id": "contact", "title": "Contact Us", "url_pattern": "/contact", "children": []}
   ]}',
   '[]',
-  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/{location_slug}-{page_slug}"}',
+  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/service-areas/{location_slug}/{page_slug}"}',
   true
 )
 ON CONFLICT (id) DO UPDATE SET
