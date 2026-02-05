@@ -51,15 +51,18 @@ export async function sendMessage(
       requestParams.thinking = opts.thinking
     }
 
-    const response = await anthropic.messages.create(requestParams)
+    // Use streaming to handle long-running requests (required for >10min or large thinking budgets)
+    const stream = await anthropic.messages.create({
+      ...requestParams,
+      stream: true,
+    })
 
-    // Extract text from response (skip thinking blocks, just get text)
     let textContent = ''
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        textContent += block.text
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        textContent += event.delta.text
       }
-      // Skip thinking blocks - we only want the final answer
     }
 
     if (textContent) {
