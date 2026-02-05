@@ -14,11 +14,15 @@ export interface ClaudeOptions {
   model?: string
   maxTokens?: number
   temperature?: number
+  thinking?: {
+    type: 'enabled'
+    budget_tokens: number
+  }
 }
 
-const DEFAULT_OPTIONS: Required<ClaudeOptions> = {
+const DEFAULT_OPTIONS = {
   model: 'claude-sonnet-4-5-20250929',
-  maxTokens: 4096,
+  maxTokens: 32000, // Increased for larger tasks
   temperature: 0.7
 }
 
@@ -32,7 +36,7 @@ export async function sendMessage(
   const opts = { ...DEFAULT_OPTIONS, ...options }
 
   try {
-    const response = await anthropic.messages.create({
+    const requestParams: any = {
       model: opts.model,
       max_tokens: opts.maxTokens,
       temperature: opts.temperature,
@@ -40,12 +44,26 @@ export async function sendMessage(
         role: msg.role,
         content: msg.content
       }))
-    })
+    }
 
-    // Extract text from response
-    const content = response.content[0]
-    if (content.type === 'text') {
-      return content.text
+    // Add extended thinking if configured
+    if (opts.thinking) {
+      requestParams.thinking = opts.thinking
+    }
+
+    const response = await anthropic.messages.create(requestParams)
+
+    // Extract text from response (skip thinking blocks, just get text)
+    let textContent = ''
+    for (const block of response.content) {
+      if (block.type === 'text') {
+        textContent += block.text
+      }
+      // Skip thinking blocks - we only want the final answer
+    }
+
+    if (textContent) {
+      return textContent
     }
 
     throw new Error('Unexpected response format from Claude')

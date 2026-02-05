@@ -24,10 +24,14 @@ export async function comparePages(
   const prompt = buildComparisonPrompt(promptData)
 
   try {
-    // Ask Claude
+    // Ask Claude with extended thinking for complex page matching
     const response = await askClaude(prompt, {
       temperature: 0.3, // Lower temperature for more consistent matching
-      maxTokens: 4096
+      maxTokens: 32000, // Increased to handle large sitemaps (up to 64K available)
+      thinking: {
+        type: 'enabled',
+        budget_tokens: 16000 // Allow extended thinking for complex reasoning
+      }
     })
 
     // Parse response
