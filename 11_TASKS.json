@@ -1,0 +1,569 @@
+{
+  "project_name": "AI Sitemap Builder",
+  "generated_at": "2025-02-05",
+  "total_phases": 4,
+  "total_tasks": 41,
+  "completed_tasks": 3,
+  "phases": [
+    {
+      "id": 1,
+      "name": "Foundation & Authentication",
+      "status": "not_started",
+      "estimated_duration": "1-2 days",
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "Initialize Next.js project",
+          "description": "Create Next.js 14 project with TypeScript and App Router",
+          "status": "completed",
+          "priority": "P0",
+          "estimated_hours": 0.5,
+          "dependencies": [],
+          "files_affected": ["package.json", "tsconfig.json", "next.config.js"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.2",
+          "title": "Set up Tailwind CSS and shadcn/ui",
+          "description": "Install and configure Tailwind CSS with shadcn/ui components",
+          "status": "completed",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["1.1"],
+          "files_affected": ["tailwind.config.ts", "globals.css", "components/ui/*"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.3",
+          "title": "Create Supabase project",
+          "description": "Set up Supabase project and obtain API credentials",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 0.5,
+          "dependencies": [],
+          "files_affected": [".env.local", ".env.example"],
+          "docs_to_update": ["07_DEVELOPMENT_ENVIRONMENT.md"]
+        },
+        {
+          "id": "1.4",
+          "title": "Implement Supabase client utilities",
+          "description": "Create server and client Supabase utilities for SSR",
+          "status": "completed",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["1.3"],
+          "files_affected": ["lib/supabase/client.ts", "lib/supabase/server.ts", "lib/supabase/middleware.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.5",
+          "title": "Create auth middleware",
+          "description": "Implement Next.js middleware for auth protection",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["1.4"],
+          "files_affected": ["middleware.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.6",
+          "title": "Build Login page",
+          "description": "Create login page with email/password form",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["1.2", "1.4"],
+          "files_affected": ["app/(auth)/login/page.tsx", "components/features/auth/LoginForm.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.7",
+          "title": "Build Register page",
+          "description": "Create registration page with form validation",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1.5,
+          "dependencies": ["1.6"],
+          "files_affected": ["app/(auth)/register/page.tsx", "components/features/auth/RegisterForm.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.8",
+          "title": "Create dashboard layout",
+          "description": "Build protected layout with header and sidebar",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["1.5"],
+          "files_affected": ["app/(dashboard)/layout.tsx", "components/layouts/DashboardLayout.tsx", "components/layouts/Header.tsx", "components/layouts/Sidebar.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.9",
+          "title": "Build empty dashboard page",
+          "description": "Create placeholder dashboard page",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 0.5,
+          "dependencies": ["1.8"],
+          "files_affected": ["app/(dashboard)/page.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.10",
+          "title": "Set up GitHub repository",
+          "description": "Initialize git repo and push to GitHub",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 0.5,
+          "dependencies": ["1.1"],
+          "files_affected": [".gitignore", "README.md"],
+          "docs_to_update": []
+        },
+        {
+          "id": "1.11",
+          "title": "Configure Railway project",
+          "description": "Set up Railway deployment with environment variables",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["1.10"],
+          "files_affected": [],
+          "docs_to_update": ["07_DEVELOPMENT_ENVIRONMENT.md"]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Core Data & Templates",
+      "status": "not_started",
+      "estimated_duration": "2-3 days",
+      "tasks": [
+        {
+          "id": "2.1",
+          "title": "Create users table migration",
+          "description": "Extend Supabase auth.users with profile data",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["1.11"],
+          "files_affected": ["supabase/migrations/001_users.sql"],
+          "docs_to_update": ["03_DATA_MODELS.md"]
+        },
+        {
+          "id": "2.2",
+          "title": "Create templates table migration",
+          "description": "Create templates table with JSONB structure",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["2.1"],
+          "files_affected": ["supabase/migrations/002_templates.sql"],
+          "docs_to_update": ["03_DATA_MODELS.md"]
+        },
+        {
+          "id": "2.3",
+          "title": "Create projects table migration",
+          "description": "Create projects table with config columns",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["2.1"],
+          "files_affected": ["supabase/migrations/003_projects.sql"],
+          "docs_to_update": ["03_DATA_MODELS.md"]
+        },
+        {
+          "id": "2.4",
+          "title": "Create sitemap_nodes table migration",
+          "description": "Create sitemap_nodes with self-referential parent",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["2.3"],
+          "files_affected": ["supabase/migrations/004_sitemap_nodes.sql"],
+          "docs_to_update": ["03_DATA_MODELS.md"]
+        },
+        {
+          "id": "2.5",
+          "title": "Set up RLS policies",
+          "description": "Create Row Level Security policies for all tables",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["2.1", "2.2", "2.3", "2.4"],
+          "files_affected": ["supabase/migrations/005_rls_policies.sql"],
+          "docs_to_update": ["08_SECURITY_GUIDELINES.md"]
+        },
+        {
+          "id": "2.6",
+          "title": "Generate TypeScript types",
+          "description": "Generate types from Supabase schema",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 0.5,
+          "dependencies": ["2.5"],
+          "files_affected": ["types/database.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "2.7",
+          "title": "Build GET /api/auth/me endpoint",
+          "description": "Return current user profile",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["2.6"],
+          "files_affected": ["app/api/auth/me/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "2.8",
+          "title": "Build templates API endpoints",
+          "description": "Create CRUD endpoints for templates",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 3,
+          "dependencies": ["2.6"],
+          "files_affected": ["app/api/templates/route.ts", "app/api/templates/[id]/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "2.9",
+          "title": "Build Template List page",
+          "description": "Admin page to view all templates",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["2.8"],
+          "files_affected": ["app/(dashboard)/templates/page.tsx", "components/features/templates/TemplateList.tsx", "components/features/templates/TemplateCard.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "2.10",
+          "title": "Build Template Editor page",
+          "description": "Admin page to create/edit templates",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 4,
+          "dependencies": ["2.9"],
+          "files_affected": ["app/(dashboard)/templates/[id]/page.tsx", "components/features/templates/TemplateEditor.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "2.11",
+          "title": "Build projects API endpoints",
+          "description": "Create CRUD endpoints for projects",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 3,
+          "dependencies": ["2.6"],
+          "files_affected": ["app/api/projects/route.ts", "app/api/projects/[id]/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "2.12",
+          "title": "Build Project List on Dashboard",
+          "description": "Display user's projects on dashboard",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["2.11"],
+          "files_affected": ["components/features/projects/ProjectList.tsx", "components/features/projects/ProjectCard.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "2.13",
+          "title": "Build Create Project flow",
+          "description": "New project wizard with template selection",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 3,
+          "dependencies": ["2.12"],
+          "files_affected": ["app/(dashboard)/projects/new/page.tsx", "components/features/projects/CreateProjectForm.tsx", "components/features/templates/TemplateSelector.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "2.14",
+          "title": "Seed initial template data",
+          "description": "Create at least 1 sample template",
+          "status": "todo",
+          "priority": "P1",
+          "estimated_hours": 1,
+          "dependencies": ["2.2"],
+          "files_affected": ["supabase/seed.sql"],
+          "docs_to_update": []
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Crawling & AI Comparison",
+      "status": "not_started",
+      "estimated_duration": "2-3 days",
+      "tasks": [
+        {
+          "id": "3.1",
+          "title": "Build sitemap crawler utility",
+          "description": "Create functions to fetch and parse sitemap.xml",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 4,
+          "dependencies": ["2.14"],
+          "files_affected": ["lib/crawler/sitemap.ts", "lib/crawler/parser.ts", "lib/crawler/fetcher.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "3.2",
+          "title": "Build POST /api/crawl endpoint",
+          "description": "API endpoint to trigger crawl",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["3.1"],
+          "files_affected": ["app/api/crawl/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "3.3",
+          "title": "Build Crawl Form component",
+          "description": "UI for entering URL and viewing results",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["3.2"],
+          "files_affected": ["components/features/crawler/CrawlForm.tsx", "components/features/crawler/CrawlResults.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "3.4",
+          "title": "Build Claude API client",
+          "description": "Create Claude SDK wrapper and prompts",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": [],
+          "files_affected": ["lib/claude/client.ts", "lib/claude/prompts.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "3.5",
+          "title": "Build page comparison function",
+          "description": "Implement AI-powered page matching",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 3,
+          "dependencies": ["3.4"],
+          "files_affected": ["lib/claude/compare.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "3.6",
+          "title": "Build POST /api/ai/compare endpoint",
+          "description": "API endpoint for AI comparison",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["3.5"],
+          "files_affected": ["app/api/ai/compare/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "3.7",
+          "title": "Build Service Configuration component",
+          "description": "UI for toggling services on/off",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["2.14"],
+          "files_affected": ["components/features/services/ServiceConfig.tsx", "components/features/services/ServiceToggle.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "3.8",
+          "title": "Build Location Input component",
+          "description": "UI for pasting and parsing locations",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["2.14"],
+          "files_affected": ["components/features/locations/LocationInput.tsx", "components/features/locations/LocationList.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "3.9",
+          "title": "Build location × service matrix generator",
+          "description": "Generate all location-service combinations",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["3.7", "3.8"],
+          "files_affected": ["lib/utils/matrix.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "3.10",
+          "title": "Build sitemap nodes API endpoints",
+          "description": "CRUD + bulk create for sitemap nodes",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 3,
+          "dependencies": ["2.6"],
+          "files_affected": ["app/api/projects/[id]/nodes/route.ts", "app/api/projects/[id]/nodes/bulk/route.ts", "app/api/projects/[id]/nodes/[nodeId]/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "3.11",
+          "title": "Integrate all into project editor",
+          "description": "Wire up crawl, compare, matrix in project page",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 4,
+          "dependencies": ["3.3", "3.6", "3.9", "3.10"],
+          "files_affected": ["app/(dashboard)/projects/[id]/page.tsx"],
+          "docs_to_update": []
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Visualization & Export",
+      "status": "not_started",
+      "estimated_duration": "2 days",
+      "tasks": [
+        {
+          "id": "4.1",
+          "title": "Build SitemapNode component",
+          "description": "Single node block with styling",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 2,
+          "dependencies": ["3.11"],
+          "files_affected": ["components/features/sitemap/SitemapNode.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.2",
+          "title": "Build SitemapViewer component",
+          "description": "Tree view container for nodes",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 3,
+          "dependencies": ["4.1"],
+          "files_affected": ["components/features/sitemap/SitemapViewer.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.3",
+          "title": "Implement color coding",
+          "description": "Blue for template, orange for client",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["4.2"],
+          "files_affected": ["components/features/sitemap/SitemapNode.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.4",
+          "title": "Build node editing inline",
+          "description": "Edit node title/URL inline",
+          "status": "todo",
+          "priority": "P1",
+          "estimated_hours": 2,
+          "dependencies": ["4.2"],
+          "files_affected": ["components/features/sitemap/NodeEditor.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.5",
+          "title": "Build SitemapToolbar",
+          "description": "Actions bar with export buttons",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1.5,
+          "dependencies": ["4.2"],
+          "files_affected": ["components/features/sitemap/SitemapToolbar.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.6",
+          "title": "Build CSV export utility",
+          "description": "Convert nodes to CSV format",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1.5,
+          "dependencies": ["3.11"],
+          "files_affected": ["lib/utils/export.ts"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.7",
+          "title": "Build CSV export endpoint",
+          "description": "GET /api/projects/[id]/export/csv",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["4.6"],
+          "files_affected": ["app/api/projects/[id]/export/csv/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "4.8",
+          "title": "Build JSON export endpoint",
+          "description": "GET /api/projects/[id]/export/json",
+          "status": "todo",
+          "priority": "P1",
+          "estimated_hours": 1,
+          "dependencies": ["4.6"],
+          "files_affected": ["app/api/projects/[id]/export/json/route.ts"],
+          "docs_to_update": ["04_API_SPECIFICATION.md"]
+        },
+        {
+          "id": "4.9",
+          "title": "Add export buttons to toolbar",
+          "description": "Wire up export functionality",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1,
+          "dependencies": ["4.5", "4.7", "4.8"],
+          "files_affected": ["components/features/sitemap/SitemapToolbar.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.10",
+          "title": "Build project save functionality",
+          "description": "Save button and auto-save",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 1.5,
+          "dependencies": ["4.2"],
+          "files_affected": ["app/(dashboard)/projects/[id]/page.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.11",
+          "title": "Display client URL on imported nodes",
+          "description": "Show original URL for client pages",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 0.5,
+          "dependencies": ["4.3"],
+          "files_affected": ["components/features/sitemap/SitemapNode.tsx"],
+          "docs_to_update": []
+        },
+        {
+          "id": "4.12",
+          "title": "Final UI polish and testing",
+          "description": "Fix bugs, polish UI, test flows",
+          "status": "todo",
+          "priority": "P0",
+          "estimated_hours": 4,
+          "dependencies": ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "4.10", "4.11"],
+          "files_affected": [],
+          "docs_to_update": []
+        }
+      ]
+    }
+  ]
+}

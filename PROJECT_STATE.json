@@ -1,0 +1,88 @@
+{
+  "project_name": "AI Sitemap Builder",
+  "version": "1.0.0",
+  "current_phase": 1,
+  "phase_name": "Foundation & Authentication",
+  "status": "not_started",
+  "last_updated": "2025-02-05",
+  "completion_percentage": 0,
+  "architectural_decisions": [
+    "Next.js full-stack with App Router",
+    "Supabase for database and authentication",
+    "Claude API for semantic page comparison",
+    "Railway for hosting",
+    "Node.js (cheerio/axios) for sitemap crawling"
+  ],
+  "tech_stack": {
+    "frontend": "Next.js 14 (React)",
+    "backend": "Next.js API Routes",
+    "database": "Supabase (PostgreSQL)",
+    "auth": "Supabase Auth",
+    "ai": "Claude API (Anthropic)",
+    "hosting": "Railway",
+    "version_control": "GitHub"
+  },
+  "blockers": [],
+  "next_milestone": "Basic authentication and project CRUD",
+  "milestones": [
+    {
+      "phase": 1,
+      "name": "Foundation & Authentication",
+      "status": "not_started",
+      "target_features": [
+        "Project setup",
+        "Supabase integration",
+        "User authentication",
+        "Basic dashboard"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Core Data & Templates",
+      "status": "not_started",
+      "target_features": [
+        "Database schema",
+        "Template CRUD",
+        "Project CRUD",
+        "Admin template management"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Crawling & AI Comparison",
+      "status": "not_started",
+      "target_features": [
+        "Sitemap crawler",
+        "Claude AI integration",
+        "Page comparison logic",
+        "Service/location configuration"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Visualization & Export",
+      "status": "not_started",
+      "target_features": [
+        "Visual sitemap builder",
+        "Color-coded display",
+        "CSV export",
+        "Project persistence"
+      ]
+    }
+  ],
+  "team": {
+    "users": [
+      "Local SEO Engineers",
+      "Operations Manager"
+    ],
+    "admins": [
+      "System Administrator"
+    ]
+  },
+  "constraints": {
+    "api_budget_monthly": 50,
+    "api_budget_currency": "USD",
+    "sites_per_month": 5,
+    "max_templates": 5
+  }
+}

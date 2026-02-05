@@ -1,0 +1,312 @@
+# AI Sitemap Builder - Cursor Rules
+# Mode: Autonomous Agent
+# Version: 1.0.0
+
+## Project Context
+- **Description:** AI-powered sitemap generator that compares client websites against templates
+- **Stack:** Next.js, Supabase, Claude API, Railway
+- **Docs Location:** All documentation in project root (01_*, 02_*, etc.)
+
+---
+
+## Automatic Context Loading
+
+### When User Mentions "Project" or "Projects"
+**LOAD:**
+- `03_DATA_MODELS.md` (search for "projects" table)
+- `04_API_SPECIFICATION.md` (search for "/api/projects" endpoints)
+- `09_APP_FLOW.md` (search for "Create Sitemap" flow)
+
+### When User Mentions "Template" or "Templates"
+**LOAD:**
+- `03_DATA_MODELS.md` (search for "templates" table)
+- `04_API_SPECIFICATION.md` (search for "/api/templates" endpoints)
+- `01_PROJECT_REQUIREMENTS.md` (search for "Template" features)
+
+### When User Mentions "Sitemap" or "SitemapNode" or "Wireframe"
+**LOAD:**
+- `03_DATA_MODELS.md` (search for "sitemap_nodes" table)
+- `04_API_SPECIFICATION.md` (search for "/api/sitemap" endpoints)
+- `09_APP_FLOW.md` (search for sitemap generation flow)
+
+### When User Mentions "Crawl" or "Crawler" or "Scrape"
+**LOAD:**
+- `05_BACKEND_STRUCTURE.md` (search for "crawler" service)
+- `04_API_SPECIFICATION.md` (search for "/api/crawl" endpoint)
+- `13_ERROR_CATALOG.md` (search for "CRAWL_" errors)
+
+### When User Mentions "User" or "Auth" or "Login"
+**LOAD:**
+- `03_DATA_MODELS.md` (search for "users" table)
+- `08_SECURITY_GUIDELINES.md` (full document)
+- `04_API_SPECIFICATION.md` (search for "/api/auth" endpoints)
+
+### When User Mentions "Service" or "Services" (in context of client services)
+**LOAD:**
+- `03_DATA_MODELS.md` (search for "services_config")
+- `09_APP_FLOW.md` (search for "Service Configuration")
+- `12_GLOSSARY.md` (search for "Service")
+
+### When User Mentions "Location" or "Locations" or "City" or "Service Area"
+**LOAD:**
+- `03_DATA_MODELS.md` (search for "locations")
+- `09_APP_FLOW.md` (search for "Location Configuration")
+- `05_BACKEND_STRUCTURE.md` (search for "location matrix")
+
+### When User Mentions "Claude" or "AI" or "LLM" or "Comparison"
+**LOAD:**
+- `05_BACKEND_STRUCTURE.md` (search for "claude" service)
+- `04_API_SPECIFICATION.md` (search for "/api/ai" endpoints)
+- `08_SECURITY_GUIDELINES.md` (search for "API Key")
+
+### When User Mentions "Export" or "CSV"
+**LOAD:**
+- `04_API_SPECIFICATION.md` (search for "/api/export" endpoints)
+- `05_BACKEND_STRUCTURE.md` (search for "export" utilities)
+
+### Standard Triggers
+- "What's next?" → LOAD `10_IMPLEMENTATION_PLAN.md`
+- "error" / "bug" → LOAD `13_ERROR_CATALOG.md`
+- "deploy" → LOAD `07_DEVELOPMENT_ENVIRONMENT.md`
+- "security" / "auth" → LOAD `08_SECURITY_GUIDELINES.md`
+- "database" / "schema" → LOAD `03_DATA_MODELS.md`
+- "api" / "endpoint" → LOAD `04_API_SPECIFICATION.md`
+
+---
+
+## Code Patterns
+
+### API Route Pattern (Next.js App Router)
+```typescript
+// app/api/[resource]/route.ts
+import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    
+    // 1. Verify authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_REQUIRED', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    // 2. Perform database operation
+    const { data, error } = await supabase
+      .from('table_name')
+      .select('*')
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    // 3. Return success response
+    return NextResponse.json({ success: true, data })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json(
+      { success: false, error: { code: 'SYS_INTERNAL', message: 'Internal server error' } },
+      { status: 500 }
+    )
+  }
+}
+```
+
+### Supabase Client Pattern (Server Component)
+```typescript
+// lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export async function createClient() {
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Handle server component cookie setting
+          }
+        },
+      },
+    }
+  )
+}
+```
+
+### React Component Pattern
+```typescript
+// components/feature/ComponentName.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+
+interface ComponentNameProps {
+  propName: string
+  onAction?: (value: string) => void
+}
+
+export function ComponentName({ propName, onAction }: ComponentNameProps) {
+  const [state, setState] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleAction = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      // Perform action
+      onAction?.(state)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {error && <p className="text-red-500">{error}</p>}
+      <Button onClick={handleAction} disabled={isLoading}>
+        {isLoading ? 'Loading...' : 'Action'}
+      </Button>
+    </div>
+  )
+}
+```
+
+### Claude API Call Pattern
+```typescript
+// lib/claude.ts
+import Anthropic from '@anthropic-ai/sdk'
+
+const anthropic = new Anthropic({
+  apiKey: process.env.CLAUDE_API_KEY!,
+})
+
+export async function comparePages(
+  templatePages: string[],
+  clientPages: string[]
+): Promise<ComparisonResult> {
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 4096,
+    messages: [
+      {
+        role: 'user',
+        content: `Compare these template pages with client pages and identify matches, gaps, and unique client pages.
+        
+Template pages: ${JSON.stringify(templatePages)}
+Client pages: ${JSON.stringify(clientPages)}
+
+Return JSON with: matches, templateOnly, clientOnly, uncertainMatches`
+      }
+    ],
+  })
+
+  // Parse and return result
+  const content = message.content[0]
+  if (content.type === 'text') {
+    return JSON.parse(content.text)
+  }
+  throw new Error('Unexpected response format')
+}
+```
+
+---
+
+## Doc-Sync Protocol (Mandatory)
+
+When you make changes, UPDATE the corresponding documentation:
+
+| Change Type | Update These Files |
+|-------------|-------------------|
+| Schema change (add/modify table) | `03_DATA_MODELS.md` |
+| API endpoint change | `04_API_SPECIFICATION.md` |
+| New error code | `13_ERROR_CATALOG.md` |
+| Task completed | Check box in `10_IMPLEMENTATION_PLAN.md`, update `11_TASKS.json` |
+| New component | `06_FRONTEND_GUIDELINES.md` if pattern-worthy |
+| Environment variable added | `07_DEVELOPMENT_ENVIRONMENT.md` |
+| Security-related change | `08_SECURITY_GUIDELINES.md` |
+
+**CRITICAL:** After completing ANY task, verify documentation is in sync.
+
+---
+
+## Security Rules (Non-Negotiable)
+
+### NEVER:
+- Expose `CLAUDE_API_KEY` or `SUPABASE_SERVICE_ROLE_KEY` to the client
+- Store API keys in code or commit them to git
+- Trust user input without validation
+- Allow SQL injection (always use parameterized queries via Supabase)
+- Skip authentication checks on protected routes
+- Log sensitive data (passwords, API keys, tokens)
+
+### ALWAYS:
+- Use Supabase Auth for authentication
+- Check user role before admin operations
+- Validate and sanitize all user inputs
+- Use HTTPS in production
+- Implement rate limiting on AI endpoints
+- Store sensitive config in environment variables
+
+---
+
+## Naming Conventions
+
+| Type | Convention | Example |
+|------|-----------|---------|
+| React Components | PascalCase | `SitemapViewer.tsx` |
+| Utility functions | camelCase | `parseClientSitemap.ts` |
+| API routes | kebab-case folders | `app/api/sitemap-nodes/route.ts` |
+| Database tables | snake_case | `sitemap_nodes` |
+| Environment variables | SCREAMING_SNAKE_CASE | `CLAUDE_API_KEY` |
+| CSS classes | kebab-case (Tailwind) | `text-blue-500` |
+| TypeScript interfaces | PascalCase with I prefix optional | `Project` or `IProject` |
+
+---
+
+## File Organization Reference
+
+```
+/app
+  /api                    # API routes
+  /(auth)                 # Auth pages (login, register)
+  /(dashboard)            # Protected app pages
+/components
+  /ui                     # Reusable UI components
+  /features               # Feature-specific components
+  /layouts                # Layout components
+/lib
+  /supabase               # Supabase client utilities
+  /claude                 # Claude API utilities
+  /utils                  # General utilities
+/types                    # TypeScript type definitions
+```
+
+---
+
+## Testing Checklist
+
+Before marking a feature complete:
+- [ ] API endpoint returns correct response format
+- [ ] Error cases return appropriate error codes
+- [ ] Authentication is enforced on protected routes
+- [ ] Admin-only routes check user role
+- [ ] UI handles loading and error states
+- [ ] Data validates before database insert
