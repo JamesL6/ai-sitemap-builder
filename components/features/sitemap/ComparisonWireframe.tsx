@@ -3,8 +3,10 @@
 import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CheckCircle, XCircle, HelpCircle, AlertTriangle, ExternalLink } from 'lucide-react'
+import { CheckCircle, XCircle, HelpCircle, AlertTriangle, ExternalLink, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import type { ComparisonResult, TemplateStructure, TemplatePage } from '@/types/database'
 
 interface ComparisonWireframeProps {
@@ -29,6 +31,54 @@ export function ComparisonWireframe({
   onAddClientPage 
 }: ComparisonWireframeProps) {
   const [activeTab, setActiveTab] = useState<'unified' | 'summary'>('summary')
+  const [clientOnlySearch, setClientOnlySearch] = useState('')
+  const [clientOnlyCategory, setClientOnlyCategory] = useState<string>('all')
+  const [clientOnlyPage, setClientOnlyPage] = useState(0)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    matched: true,
+    templateOnly: true,
+    clientOnly: false,
+    uncertain: true
+  })
+  const CLIENT_ONLY_PAGE_SIZE = 25
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
+
+  // Filter and paginate client-only pages
+  const clientOnlyFiltered = useMemo(() => {
+    let pages = comparisonResult.client_only
+    
+    if (clientOnlyCategory !== 'all') {
+      pages = pages.filter(p => p.suggested_category === clientOnlyCategory)
+    }
+    
+    if (clientOnlySearch) {
+      const q = clientOnlySearch.toLowerCase()
+      pages = pages.filter(p => 
+        p.title.toLowerCase().includes(q) || p.url.toLowerCase().includes(q)
+      )
+    }
+    
+    return pages
+  }, [comparisonResult.client_only, clientOnlySearch, clientOnlyCategory])
+
+  const clientOnlyPageCount = Math.ceil(clientOnlyFiltered.length / CLIENT_ONLY_PAGE_SIZE)
+  const clientOnlyVisible = clientOnlyFiltered.slice(
+    clientOnlyPage * CLIENT_ONLY_PAGE_SIZE,
+    (clientOnlyPage + 1) * CLIENT_ONLY_PAGE_SIZE
+  )
+
+  // Get unique categories for filter
+  const clientOnlyCategories = useMemo(() => {
+    const cats = new Map<string, number>()
+    for (const page of comparisonResult.client_only) {
+      const cat = page.suggested_category || 'standard'
+      cats.set(cat, (cats.get(cat) || 0) + 1)
+    }
+    return cats
+  }, [comparisonResult.client_only])
 
   // Build unified tree showing comparison results
   const unifiedTree = useMemo((): UnifiedTreeNode[] => {
@@ -271,42 +321,122 @@ export function ComparisonWireframe({
 
               {/* Client Only */}
               {comparisonResult.client_only.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-orange-600" />
-                    Client Only ({comparisonResult.client_only.length})
-                  </h4>
-                  <div className="space-y-2">
-                    {comparisonResult.client_only.map((page, index) => (
-                      <div key={index} className="p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-orange-900">{page.title}</span>
-                          <a
-                            href={page.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-orange-700 hover:underline flex items-center gap-1"
-                          >
-                            {page.url}
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                          {page.suggested_category && (
-                            <span className="text-xs text-orange-600 mt-1 block">
-                              Suggested: {page.suggested_category}
-                            </span>
-                          )}
+                <div className="border border-orange-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleSection('clientOnly')}
+                    className="w-full p-3 bg-orange-50 flex items-center justify-between hover:bg-orange-100 transition-colors"
+                  >
+                    <h4 className="font-medium flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-orange-600" />
+                      Client Only ({comparisonResult.client_only.length} pages)
+                    </h4>
+                    {expandedSections.clientOnly ? (
+                      <ChevronUp className="h-4 w-4 text-orange-600" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-orange-600" />
+                    )}
+                  </button>
+                  
+                  {expandedSections.clientOnly && (
+                    <div className="p-3 space-y-3">
+                      {/* Search and Filter */}
+                      <div className="flex gap-2 flex-wrap">
+                        <div className="relative flex-1 min-w-[200px]">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search pages..."
+                            value={clientOnlySearch}
+                            onChange={(e) => { setClientOnlySearch(e.target.value); setClientOnlyPage(0) }}
+                            className="pl-9 h-9"
+                          />
                         </div>
-                        {onAddClientPage && (
-                          <button
-                            onClick={() => onAddClientPage(page)}
-                            className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+                        <div className="flex gap-1.5 flex-wrap">
+                          <Button
+                            variant={clientOnlyCategory === 'all' ? 'secondary' : 'outline'}
+                            size="sm"
+                            onClick={() => { setClientOnlyCategory('all'); setClientOnlyPage(0) }}
                           >
-                            Add to Sitemap
-                          </button>
-                        )}
+                            All ({comparisonResult.client_only.length})
+                          </Button>
+                          {Array.from(clientOnlyCategories).map(([cat, count]) => (
+                            <Button
+                              key={cat}
+                              variant={clientOnlyCategory === cat ? 'secondary' : 'outline'}
+                              size="sm"
+                              onClick={() => { setClientOnlyCategory(cat); setClientOnlyPage(0) }}
+                            >
+                              {cat} ({count})
+                            </Button>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+
+                      {/* Results count */}
+                      <p className="text-xs text-muted-foreground">
+                        Showing {clientOnlyPage * CLIENT_ONLY_PAGE_SIZE + 1}–{Math.min((clientOnlyPage + 1) * CLIENT_ONLY_PAGE_SIZE, clientOnlyFiltered.length)} of {clientOnlyFiltered.length} pages
+                      </p>
+
+                      {/* Page list */}
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                        {clientOnlyVisible.map((page, index) => (
+                          <div key={index} className="p-2 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm text-orange-900 truncate">{page.title}</span>
+                                {page.suggested_category && (
+                                  <Badge variant="secondary" className="bg-orange-100 text-orange-700 shrink-0 text-xs">
+                                    {page.suggested_category}
+                                  </Badge>
+                                )}
+                              </div>
+                              <a
+                                href={page.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-orange-700 hover:underline flex items-center gap-1 truncate"
+                              >
+                                {page.url}
+                                <ExternalLink className="h-3 w-3 shrink-0" />
+                              </a>
+                            </div>
+                            {onAddClientPage && (
+                              <button
+                                onClick={() => onAddClientPage(page)}
+                                className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors shrink-0 ml-2"
+                              >
+                                Add
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Pagination */}
+                      {clientOnlyPageCount > 1 && (
+                        <div className="flex items-center justify-between pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setClientOnlyPage(p => Math.max(0, p - 1))}
+                            disabled={clientOnlyPage === 0}
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-sm text-muted-foreground">
+                            Page {clientOnlyPage + 1} of {clientOnlyPageCount}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setClientOnlyPage(p => Math.min(clientOnlyPageCount - 1, p + 1))}
+                            disabled={clientOnlyPage >= clientOnlyPageCount - 1}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
