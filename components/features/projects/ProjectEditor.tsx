@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CrawlForm } from '@/components/features/crawler/CrawlForm'
@@ -9,17 +8,22 @@ import { LocationInput } from '@/components/features/locations/LocationInput'
 import { SitemapViewer } from '@/components/features/sitemap/SitemapViewer'
 import { SitemapToolbar } from '@/components/features/sitemap/SitemapToolbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, CheckCircle } from 'lucide-react'
+import { Loader2, CheckCircle, ArrowRight } from 'lucide-react'
 import { matrixToSitemapNodes, generateMatrixFromStructure, calculateMatrixSizeFromStructure, validateMatrixFromStructure } from '@/lib/utils/matrix'
 import { extractAllPages, extractMultiplyPages } from '@/lib/utils/template-helpers'
 import type { Project, Template, TemplateStructure, Location } from '@/types/database'
+
+interface CrawledPage {
+  url: string
+  title: string
+  lastModified?: string
+}
 
 interface ProjectEditorProps {
   project: Project & { template: Template | null }
 }
 
 export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
-  const router = useRouter()
   const [project, setProject] = useState(initialProject)
   const [locations, setLocations] = useState<Location[]>(project.locations as Location[] || [])
   const [isComparing, setIsComparing] = useState(false)
@@ -27,10 +31,33 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
   const [comparisonDone, setComparisonDone] = useState(!!project.comparison_result)
   const [nodeCount, setNodeCount] = useState(0)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [activeTab, setActiveTab] = useState('crawl')
+  const [crawlCompleted, setCrawlCompleted] = useState(!!project.crawl_data)
+  const [generationDone, setGenerationDone] = useState(project.status === 'finalized')
 
   const template = project.template
   const templateStructure = template?.structure as TemplateStructure || { pages: [] }
   const multiplyPages = extractMultiplyPages(templateStructure)
+
+  // Handle successful crawl - update local state and enable next step
+  const handleCrawlSuccess = (pages: CrawledPage[]) => {
+    setCrawlCompleted(true)
+    // Update local project state with crawl data
+    setProject(prev => ({
+      ...prev,
+      crawl_data: { pages },
+      status: 'crawled' as const
+    }))
+  }
+
+  // Navigate to next tab
+  const goToNextTab = (currentTab: string) => {
+    const tabOrder = ['crawl', 'compare', 'configure', 'generate', 'view']
+    const currentIndex = tabOrder.indexOf(currentTab)
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1])
+    }
+  }
 
   // Handle AI comparison
   const handleCompare = async () => {
@@ -61,8 +88,11 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
       }
 
       setComparisonDone(true)
-      alert(`AI Comparison complete! Found ${result.data.matches.length} matches`)
-      router.refresh()
+      setProject(prev => ({
+        ...prev,
+        comparison_result: result.data,
+        status: 'compared' as const
+      }))
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to compare pages')
     } finally {
@@ -114,9 +144,8 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
         })
       })
 
-      alert(`Successfully generated ${result.data.created} sitemap pages!`)
+      setGenerationDone(true)
       setRefreshKey(prev => prev + 1)
-      router.refresh()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to generate sitemap')
     } finally {
@@ -156,27 +185,59 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
 
   const matrixSize = calculateMatrixSizeFromStructure(locations, templateStructure)
   const canGenerate = locations.length > 0
+  const crawlData = project.crawl_data as { pages?: CrawledPage[] } | null
 
   return (
-    <Tabs defaultValue="crawl" className="space-y-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="crawl">
           1. Crawl Website
-          {project.status !== 'draft' && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
+          {crawlCompleted && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
         </TabsTrigger>
         <TabsTrigger value="compare">
           2. AI Comparison
           {comparisonDone && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
         </TabsTrigger>
-        <TabsTrigger value="configure">3. Configure</TabsTrigger>
-        <TabsTrigger value="generate">4. Generate</TabsTrigger>
+        <TabsTrigger value="configure">
+          3. Configure
+          {locations.length > 0 && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
+        </TabsTrigger>
+        <TabsTrigger value="generate">
+          4. Generate
+          {generationDone && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
+        </TabsTrigger>
         <TabsTrigger value="view">5. View & Export</TabsTrigger>
       </TabsList>
 
+      {/* Step 1: Crawl Website */}
       <TabsContent value="crawl" className="space-y-4">
-        <CrawlForm projectId={project.id} initialUrl={project.client_url || ''} />
+        <CrawlForm 
+          projectId={project.id} 
+          initialUrl={project.client_url || ''} 
+          onSuccess={handleCrawlSuccess}
+        />
+        
+        {crawlCompleted && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    Crawl complete! Found {crawlData?.pages?.length || 0} pages.
+                  </span>
+                </div>
+                <Button onClick={() => goToNextTab('crawl')} className="gap-2">
+                  Continue to AI Comparison
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </TabsContent>
 
+      {/* Step 2: AI Comparison */}
       <TabsContent value="compare" className="space-y-4">
         <Card>
           <CardHeader>
@@ -186,17 +247,24 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!project.crawl_data ? (
-              <p className="text-sm text-muted-foreground">
-                Please crawl the client website first
-              </p>
+            {!crawlCompleted ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Please crawl the client website first
+                </p>
+                <Button variant="outline" onClick={() => setActiveTab('crawl')}>
+                  Go to Crawl Step
+                </Button>
+              </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-sm">
-                  Ready to compare {extractAllPages(templateStructure).length} template pages
-                  with {(project.crawl_data as any).pages?.length || 0} crawled pages
-                </p>
-                <Button onClick={handleCompare} disabled={isComparing}>
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900">Ready to Compare</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    {extractAllPages(templateStructure).length} template pages vs {crawlData?.pages?.length || 0} crawled pages
+                  </p>
+                </div>
+                <Button onClick={handleCompare} disabled={isComparing} className="w-full">
                   {isComparing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -210,8 +278,28 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
             )}
           </CardContent>
         </Card>
+
+        {comparisonDone && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    AI Comparison complete!
+                  </span>
+                </div>
+                <Button onClick={() => goToNextTab('compare')} className="gap-2">
+                  Continue to Configure
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </TabsContent>
 
+      {/* Step 3: Configure Locations */}
       <TabsContent value="configure" className="space-y-4">
         <Card>
           <CardHeader>
@@ -223,7 +311,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
           <CardContent>
             {multiplyPages.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No pages are marked to multiply. Edit your template to mark pages with "Multiply by locations".
+                No pages are marked to multiply. Edit your template to mark pages with &quot;Multiply by locations&quot;.
               </p>
             ) : (
               <div className="space-y-2">
@@ -247,8 +335,28 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
           locations={locations}
           onChange={handleLocationsChange}
         />
+
+        {locations.length > 0 && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    {locations.length} location{locations.length !== 1 ? 's' : ''} configured
+                  </span>
+                </div>
+                <Button onClick={() => goToNextTab('configure')} className="gap-2">
+                  Continue to Generate
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </TabsContent>
 
+      {/* Step 4: Generate Sitemap */}
       <TabsContent value="generate" className="space-y-4">
         <Card>
           <CardHeader>
@@ -259,18 +367,23 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {!canGenerate ? (
-              <p className="text-sm text-muted-foreground">
-                Please add locations and enable at least one service first
-              </p>
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Please add locations first
+                </p>
+                <Button variant="outline" onClick={() => setActiveTab('configure')}>
+                  Go to Configure Step
+                </Button>
+              </div>
             ) : (
               <>
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-medium text-blue-900">Matrix Preview</p>
                   <p className="text-sm text-blue-700 mt-1">
-                    {locations.length} location{locations.length !== 1 ? 's' : ''} × pages marked for multiplication = {matrixSize} total pages
+                    {locations.length} location{locations.length !== 1 ? 's' : ''} × {multiplyPages.length} page{multiplyPages.length !== 1 ? 's' : ''} = {matrixSize} total pages
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
-                    Each page marked "Multiply by locations" in the template will generate {locations.length} location variant{locations.length !== 1 ? 's' : ''}
+                    Each page marked &quot;Multiply by locations&quot; will generate {locations.length} location variant{locations.length !== 1 ? 's' : ''}
                   </p>
                 </div>
 
@@ -288,8 +401,28 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
             )}
           </CardContent>
         </Card>
+
+        {generationDone && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    Sitemap generated successfully!
+                  </span>
+                </div>
+                <Button onClick={() => goToNextTab('generate')} className="gap-2">
+                  View & Export
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </TabsContent>
 
+      {/* Step 5: View & Export */}
       <TabsContent value="view" className="space-y-4">
         <SitemapToolbar projectId={project.id} nodeCount={nodeCount} />
         <SitemapViewer projectId={project.id} key={refreshKey} onNodeCountUpdate={handleNodeCountUpdate} />
