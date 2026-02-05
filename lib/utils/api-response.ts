@@ -1,10 +1,23 @@
 import { NextResponse } from 'next/server'
 
-export function apiResponse<T>(data: T, status = 200) {
+interface PaginationMeta {
+  total: number
+  limit: number
+  offset: number
+}
+
+export function apiResponse<T>(data: T, status = 200, pagination?: PaginationMeta) {
   return NextResponse.json({
     success: true,
     data,
-    meta: { timestamp: new Date().toISOString() }
+    meta: { 
+      timestamp: new Date().toISOString(),
+      ...(pagination && {
+        total: pagination.total,
+        limit: pagination.limit,
+        offset: pagination.offset
+      })
+    }
   }, { status })
 }
 

@@ -12,9 +12,8 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Templates', href: '/dashboard/templates', icon: FileText },
+  { name: 'Projects', href: '/', icon: FolderKanban },
+  { name: 'Templates', href: '/templates', icon: FileText },
 ]
 
 export function Sidebar({ open, onClose }: SidebarProps) {
@@ -49,7 +48,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           {/* Navigation */}
           <nav className="flex-1 space-y-1 p-4">
             {navigation.map((item) => {
-              const isActive = pathname === item.href
+              // Check if current path matches or starts with the nav item
+              const isActive = item.href === '/' 
+                ? pathname === '/' || pathname.startsWith('/projects')
+                : pathname.startsWith(item.href)
               const Icon = item.icon
               
               return (

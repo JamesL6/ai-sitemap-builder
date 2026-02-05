@@ -87,83 +87,85 @@
 **Success Criteria:** Admins can create templates, users can create projects
 
 ### Tasks
-- [ ] **2.1:** Create database migrations for users table extension
-  - Files: `supabase/migrations/001_users.sql`
+- [x] **2.1:** Create database migrations for users table extension
+  - Files: `supabase/migrations/001_create_users_extension.sql`
   - Docs to update: `03_DATA_MODELS.md`
   - Dependencies: Phase 1
 
-- [ ] **2.2:** Create database migrations for templates table
-  - Files: `supabase/migrations/002_templates.sql`
+- [x] **2.2:** Create database migrations for templates table
+  - Files: `supabase/migrations/002_create_templates.sql`
   - Docs to update: `03_DATA_MODELS.md`
   - Dependencies: 2.1
 
-- [ ] **2.3:** Create database migrations for projects table
-  - Files: `supabase/migrations/003_projects.sql`
+- [x] **2.3:** Create database migrations for projects table
+  - Files: `supabase/migrations/003_create_projects.sql`
   - Docs to update: `03_DATA_MODELS.md`
   - Dependencies: 2.1
 
-- [ ] **2.4:** Create database migrations for sitemap_nodes table
-  - Files: `supabase/migrations/004_sitemap_nodes.sql`
+- [x] **2.4:** Create database migrations for sitemap_nodes table
+  - Files: `supabase/migrations/004_create_sitemap_nodes.sql`
   - Docs to update: `03_DATA_MODELS.md`
   - Dependencies: 2.3
 
-- [ ] **2.5:** Set up Row Level Security policies
-  - Files: `supabase/migrations/005_rls_policies.sql`
+- [x] **2.5:** Set up Row Level Security policies
+  - Files: `supabase/migrations/005_create_rls_policies.sql`
   - Docs to update: `08_SECURITY_GUIDELINES.md`
   - Dependencies: 2.1, 2.2, 2.3, 2.4
 
-- [ ] **2.6:** Generate TypeScript types from Supabase
+- [x] **2.6:** Generate TypeScript types from Supabase
   - Files: `types/database.ts`
   - Docs to update: None
   - Dependencies: 2.5
 
-- [ ] **2.7:** Build GET /api/auth/me endpoint
+- [x] **2.7:** Build GET /api/auth/me endpoint
   - Files: `app/api/auth/me/route.ts`
   - Docs to update: `04_API_SPECIFICATION.md`
   - Dependencies: 2.6
 
-- [ ] **2.8:** Build templates API endpoints (CRUD)
+- [x] **2.8:** Build templates API endpoints (CRUD)
   - Files: `app/api/templates/route.ts`, `app/api/templates/[id]/route.ts`
   - Docs to update: `04_API_SPECIFICATION.md`
   - Dependencies: 2.6
 
-- [ ] **2.9:** Build Template List page (admin)
+- [x] **2.9:** Build Template List page (admin)
   - Files: `app/(dashboard)/templates/page.tsx`, `components/features/templates/TemplateList.tsx`, `components/features/templates/TemplateCard.tsx`
   - Docs to update: None
   - Dependencies: 2.8
 
-- [ ] **2.10:** Build Template Editor page (admin)
-  - Files: `app/(dashboard)/templates/[id]/page.tsx`, `components/features/templates/TemplateEditor.tsx`
+- [x] **2.10:** Build Template Editor page (admin)
+  - Files: `app/(dashboard)/templates/[id]/page.tsx`
   - Docs to update: None
   - Dependencies: 2.9
 
-- [ ] **2.11:** Build projects API endpoints (CRUD)
+- [x] **2.11:** Build projects API endpoints (CRUD)
   - Files: `app/api/projects/route.ts`, `app/api/projects/[id]/route.ts`
   - Docs to update: `04_API_SPECIFICATION.md`
   - Dependencies: 2.6
 
-- [ ] **2.12:** Build Project List on Dashboard
+- [x] **2.12:** Build Project List on Dashboard
   - Files: `components/features/projects/ProjectList.tsx`, `components/features/projects/ProjectCard.tsx`
   - Docs to update: None
   - Dependencies: 2.11
 
-- [ ] **2.13:** Build Create Project flow
+- [x] **2.13:** Build Create Project flow
   - Files: `app/(dashboard)/projects/new/page.tsx`, `components/features/projects/CreateProjectForm.tsx`, `components/features/templates/TemplateSelector.tsx`
   - Docs to update: None
   - Dependencies: 2.12
 
-- [ ] **2.14:** Seed initial template data
-  - Files: `supabase/seed.sql` or `scripts/seed.ts`
+- [x] **2.14:** Seed initial template data
+  - Files: `supabase/seed.sql`
   - Docs to update: None
   - Dependencies: 2.2
 
 ### Phase 2 Completion Checklist
-- [ ] Database schema matches `03_DATA_MODELS.md`
-- [ ] RLS policies prevent unauthorized access
-- [ ] Admins can create/edit/delete templates
-- [ ] Users can create/view/delete projects
-- [ ] Template selector works in project creation
-- [ ] At least 1 template seeded for testing
+- [x] Database schema matches `03_DATA_MODELS.md`
+- [x] RLS policies prevent unauthorized access
+- [x] Admins can create/edit/delete templates
+- [x] Users can create/view/delete projects
+- [x] Template selector works in project creation
+- [x] At least 1 template seeded for testing (3 templates in seed.sql)
+
+### Phase 2 COMPLETE ✅ (14/14 tasks done)
 
 ---
 

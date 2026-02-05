@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { ProjectList } from '@/components/features/projects/ProjectList'
+import { CreateProjectForm } from '@/components/features/projects/CreateProjectForm'
 
-export default async function DashboardPage() {
+export default async function NewProjectPage() {
   const supabase = await createClient()
   
   // Check authentication
@@ -15,13 +15,13 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Projects</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Create New Project</h1>
         <p className="text-muted-foreground">
-          Create and manage your sitemap projects
+          Set up a new sitemap project for your client
         </p>
       </div>
       
-      <ProjectList />
+      <CreateProjectForm />
     </div>
   )
 }
