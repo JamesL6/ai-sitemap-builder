@@ -32,8 +32,9 @@ ${data.clientPages.map((page, i) => `${i + 1}. ${page.title} - ${page.url}`).joi
 Compare the template pages with the client's actual pages and identify:
 1. **Matches**: Client pages that clearly correspond to template pages
 2. **Template Only**: Template pages that the client doesn't have
-3. **Client Only**: Client pages that don't match any template page
-4. **Uncertain**: Potential matches that need clarification
+3. **Uncertain**: Potential matches that need clarification
+
+IMPORTANT: You do NOT need to list client-only pages. Those will be computed automatically by subtracting matched/uncertain pages from the full client list. Focus your effort on finding the best matches.
 
 **Rules:**
 - Be smart about semantic matching (e.g., "Water Damage Services" matches "Water Damage Restoration")
@@ -43,6 +44,8 @@ Compare the template pages with the client's actual pages and identify:
 - Assign confidence scores (0.0-1.0) to each match based on both title AND URL similarity
 - Only include matches with confidence >= 0.6 in the "matches" array
 - Put lower-confidence potential matches (0.4-0.59) in "uncertain"
+- Each template page should appear at most ONCE (in matches, template_only, or uncertain)
+- Each client page should appear at most ONCE in matches or uncertain
 
 **Response Format (JSON only, no markdown):**
 {
@@ -57,13 +60,6 @@ Compare the template pages with the client's actual pages and identify:
     }
   ],
   "template_only": ["Fire Damage Restoration", "Mold Remediation"],
-  "client_only": [
-    {
-      "title": "Financing Options",
-      "url": "https://example.com/financing",
-      "suggested_category": "standard"
-    }
-  ],
   "uncertain": [
     {
       "template_page": "Storm Damage",
