@@ -26,18 +26,32 @@ function toSlug(text: string): string {
 function PageNode({ 
   page, 
   depth = 0, 
+  parentUrlPattern = '',
   onUpdate, 
   onRemove, 
   onAddChild 
 }: { 
   page: TemplatePage
   depth?: number
+  parentUrlPattern?: string
   onUpdate: (id: string, updates: Partial<TemplatePage>) => void
   onRemove: (id: string) => void
   onAddChild: (parentId: string) => void
 }) {
   const [isExpanded, setIsExpanded] = useState(true)
   const hasChildren = page.children && page.children.length > 0
+
+  const handleTitleChange = (newTitle: string) => {
+    // Update title and auto-generate URL pattern
+    const slug = toSlug(newTitle)
+    const baseUrl = parentUrlPattern || ''
+    const newUrlPattern = baseUrl + (baseUrl && !baseUrl.endsWith('/') ? '/' : '') + slug
+    
+    onUpdate(page.id, { 
+      title: newTitle,
+      url_pattern: newUrlPattern
+    })
+  }
 
   return (
     <div style={{ marginLeft: `${depth * 24}px` }} className="mb-2">
@@ -60,16 +74,18 @@ function PageNode({
                 <Label className="text-xs">Page Title</Label>
                 <Input
                   value={page.title}
-                  onChange={(e) => onUpdate(page.id, { title: e.target.value })}
+                  onChange={(e) => handleTitleChange(e.target.value)}
                   className="text-sm"
+                  placeholder="e.g., Burst Pipe Repair"
                 />
               </div>
               <div>
-                <Label className="text-xs">URL Pattern</Label>
+                <Label className="text-xs">URL Pattern (auto-generated)</Label>
                 <Input
                   value={page.url_pattern}
                   onChange={(e) => onUpdate(page.id, { url_pattern: e.target.value })}
-                  className="text-sm font-mono"
+                  className="text-sm font-mono text-muted-foreground"
+                  placeholder="Auto-fills from title"
                 />
               </div>
             </div>
@@ -120,6 +136,7 @@ function PageNode({
               key={child.id}
               page={child}
               depth={depth + 1}
+              parentUrlPattern={page.url_pattern}
               onUpdate={onUpdate}
               onRemove={onRemove}
               onAddChild={onAddChild}
