@@ -36,27 +36,27 @@
   - Docs to update: None
   - Dependencies: 1.3
 
-- [ ] **1.5:** Create auth middleware
+- [x] **1.5:** Create auth middleware
   - Files: `middleware.ts`
   - Docs to update: None
   - Dependencies: 1.4
 
-- [ ] **1.6:** Build Login page
+- [x] **1.6:** Build Login page
   - Files: `app/(auth)/login/page.tsx`, `components/features/auth/LoginForm.tsx`
   - Docs to update: None
   - Dependencies: 1.2, 1.4
 
-- [ ] **1.7:** Build Register page
+- [x] **1.7:** Build Register page
   - Files: `app/(auth)/register/page.tsx`, `components/features/auth/RegisterForm.tsx`
   - Docs to update: None
   - Dependencies: 1.6
 
-- [ ] **1.8:** Create dashboard layout
+- [x] **1.8:** Create dashboard layout
   - Files: `app/(dashboard)/layout.tsx`, `components/layouts/DashboardLayout.tsx`, `components/layouts/Header.tsx`, `components/layouts/Sidebar.tsx`
   - Docs to update: None
   - Dependencies: 1.5
 
-- [ ] **1.9:** Build empty dashboard page
+- [x] **1.9:** Build empty dashboard page
   - Files: `app/(dashboard)/page.tsx`
   - Docs to update: None
   - Dependencies: 1.8
