@@ -88,11 +88,44 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
 
   // Navigate to next tab
   const goToNextTab = (currentTab: string) => {
-    const tabOrder = ['crawl', 'compare', 'configure', 'generate', 'view']
+    const tabOrder = ['crawl', 'configure', 'compare', 'generate', 'view']
     const currentIndex = tabOrder.indexOf(currentTab)
     if (currentIndex < tabOrder.length - 1) {
       setActiveTab(tabOrder[currentIndex + 1])
     }
+  }
+
+  // Build template pages list for comparison, including location-expanded pages when locations are configured
+  const getComparisonTemplatePages = (): Array<{ title: string; url_pattern: string }> => {
+    const basePages = extractAllPagesWithUrls(templateStructure)
+
+    if (locations.length === 0) {
+      return basePages
+    }
+
+    // Add location landing pages (e.g., "Nashville" at /service-areas/nashville)
+    const locationUrlPattern = (template?.url_patterns as Record<string, string> | null)?.location || '/service-areas/{location_slug}'
+    const locationPages = locations.map(loc => ({
+      title: loc.name,
+      url_pattern: locationUrlPattern.replace('{location_slug}', loc.url_slug)
+    }))
+
+    // Add location × service pages (e.g., "Nashville Water Damage" at /nashville-water-damage)
+    const serviceLocationUrlPattern = (template?.url_patterns as Record<string, string> | null)?.service_location || '/{location_slug}-{page_slug}'
+    const serviceLocationPages: Array<{ title: string; url_pattern: string }> = []
+    for (const loc of locations) {
+      for (const page of multiplyPages) {
+        const pageSlug = page.url_pattern.replace(/^\//, '').replace(/\//g, '-')
+        serviceLocationPages.push({
+          title: `${loc.name} ${page.title}`,
+          url_pattern: serviceLocationUrlPattern
+            .replace('{location_slug}', loc.url_slug)
+            .replace('{page_slug}', pageSlug)
+        })
+      }
+    }
+
+    return [...basePages, ...locationPages, ...serviceLocationPages]
   }
 
   // Handle AI comparison
@@ -105,7 +138,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     setIsComparing(true)
     try {
       const crawlData = project.crawl_data as any
-      const templatePages = extractAllPagesWithUrls(templateStructure)
+      const templatePages = getComparisonTemplatePages()
       
       const response = await fetch('/api/ai/compare', {
         method: 'POST',
@@ -154,7 +187,8 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
     try {
       // Generate matrix using new structure-based approach
       const urlPattern = (template?.url_patterns as Record<string, string> | null)?.service_location || '/{location_slug}-{page_slug}'
-      const matrixNodes = generateMatrixFromStructure(locations, templateStructure, urlPattern)
+      const locationUrlPattern = (template?.url_patterns as Record<string, string> | null)?.location || '/service-areas/{location_slug}'
+      const matrixNodes = generateMatrixFromStructure(locations, templateStructure, urlPattern, locationUrlPattern)
       const sitemapNodes = matrixToSitemapNodes(matrixNodes, project.id)
 
       // Save to database
@@ -230,13 +264,13 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
           1. Crawl Website
           {crawlCompleted && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
         </TabsTrigger>
-        <TabsTrigger value="compare">
-          2. AI Comparison
-          {comparisonDone && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
-        </TabsTrigger>
         <TabsTrigger value="configure">
-          3. Configure
+          2. Locations
           {locations.length > 0 && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
+        </TabsTrigger>
+        <TabsTrigger value="compare">
+          3. AI Comparison
+          {comparisonDone && <CheckCircle className="ml-2 h-4 w-4 text-green-600" />}
         </TabsTrigger>
         <TabsTrigger value="generate">
           4. Generate
@@ -265,7 +299,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
                     </span>
                   </div>
                   <Button onClick={() => goToNextTab('crawl')} className="gap-2">
-                    Continue to AI Comparison
+                    Continue to Configure Locations
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -275,88 +309,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
         )}
       </TabsContent>
 
-      {/* Step 2: AI Comparison */}
-      <TabsContent value="compare" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>AI-Powered Page Matching</CardTitle>
-            <CardDescription>
-              Use Claude AI to intelligently match client pages with template pages
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!crawlCompleted ? (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Please crawl the client website first
-                </p>
-                <Button variant="outline" onClick={() => setActiveTab('crawl')}>
-                  Go to Crawl Step
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm font-medium text-blue-900">Ready to Compare</p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    {extractAllPagesWithUrls(templateStructure).length} template pages vs {crawlData?.pages?.length || 0} crawled pages
-                  </p>
-                </div>
-                <Button onClick={handleCompare} disabled={isComparing} className="w-full">
-                  {isComparing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Comparing with AI...
-                    </>
-                  ) : (
-                    'Run AI Comparison'
-                  )}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {comparisonDone && comparisonResult && (
-          <>
-            <Card className="border-green-200 bg-green-50">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="font-medium text-green-800">
-                      AI Comparison complete!
-                    </span>
-                  </div>
-                  <Button onClick={() => goToNextTab('compare')} className="gap-2">
-                    Continue to Configure
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Comparison Results Visualization */}
-            <ComparisonWireframe
-              templateStructure={templateStructure}
-              comparisonResult={comparisonResult}
-            />
-
-            {/* Merge Panel for Client-Only Pages */}
-            {comparisonResult.client_only.length > 0 && (
-              <MergePanel
-                projectId={project.id}
-                comparisonResult={comparisonResult}
-                existingNodes={sitemapNodes}
-                onPageAdded={handleClientPageAdded}
-                onBulkAdd={handleClientPageAdded}
-              />
-            )}
-          </>
-        )}
-      </TabsContent>
-
-      {/* Step 3: Configure Locations */}
+      {/* Step 2: Configure Locations */}
       <TabsContent value="configure" className="space-y-4">
         <Card>
           <CardHeader>
@@ -404,12 +357,101 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
                   </span>
                 </div>
                 <Button onClick={() => goToNextTab('configure')} className="gap-2">
-                  Continue to Generate
+                  Continue to AI Comparison
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
           </Card>
+        )}
+      </TabsContent>
+
+      {/* Step 3: AI Comparison */}
+      <TabsContent value="compare" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>AI-Powered Page Matching</CardTitle>
+            <CardDescription>
+              Use Claude AI to intelligently match client pages with template pages
+              {locations.length > 0 && ' (including location-expanded pages)'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!crawlCompleted ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Please crawl the client website first
+                </p>
+                <Button variant="outline" onClick={() => setActiveTab('crawl')}>
+                  Go to Crawl Step
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900">Ready to Compare</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    {getComparisonTemplatePages().length} template pages
+                    {locations.length > 0 && ` (${extractAllPagesWithUrls(templateStructure).length} base + ${locations.length} location landing + ${locations.length * multiplyPages.length} location×service)`}
+                    {' '}vs {crawlData?.pages?.length || 0} crawled pages
+                  </p>
+                  {locations.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Tip: Add locations in the previous step for a more comprehensive comparison that includes location-specific pages.
+                    </p>
+                  )}
+                </div>
+                <Button onClick={handleCompare} disabled={isComparing} className="w-full">
+                  {isComparing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Comparing with AI...
+                    </>
+                  ) : (
+                    'Run AI Comparison'
+                  )}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {comparisonDone && comparisonResult && (
+          <>
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800">
+                      AI Comparison complete!
+                    </span>
+                  </div>
+                  <Button onClick={() => goToNextTab('compare')} className="gap-2">
+                    Continue to Generate
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Comparison Results Visualization */}
+            <ComparisonWireframe
+              templateStructure={templateStructure}
+              comparisonResult={comparisonResult}
+            />
+
+            {/* Merge Panel for Client-Only Pages */}
+            {comparisonResult.client_only.length > 0 && (
+              <MergePanel
+                projectId={project.id}
+                comparisonResult={comparisonResult}
+                existingNodes={sitemapNodes}
+                onPageAdded={handleClientPageAdded}
+                onBulkAdd={handleClientPageAdded}
+              />
+            )}
+          </>
         )}
       </TabsContent>
 
@@ -437,10 +479,10 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-medium text-blue-900">Matrix Preview</p>
                   <p className="text-sm text-blue-700 mt-1">
-                    {locations.length} location{locations.length !== 1 ? 's' : ''} × {multiplyPages.length} page{multiplyPages.length !== 1 ? 's' : ''} = {matrixSize} total pages
+                    {matrixSize} total pages: {locations.length} location landing page{locations.length !== 1 ? 's' : ''} + {locations.length * multiplyPages.length} service × location page{locations.length * multiplyPages.length !== 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
-                    Each page marked &quot;Multiply by locations&quot; will generate {locations.length} location variant{locations.length !== 1 ? 's' : ''}
+                    Each location gets its own landing page plus {multiplyPages.length} service page{multiplyPages.length !== 1 ? 's' : ''}
                   </p>
                 </div>
 

@@ -22,22 +22,39 @@ export interface MatrixNode {
 }
 
 /**
- * Generate location-based pages from template structure
- * Now supports multi-level hierarchies - any page can be multiplied
+ * Generate location-based pages from template structure.
+ * Creates:
+ * 1. A standalone location landing page per location (e.g., "Miami" at /service-areas/miami)
+ * 2. Location × service cross-product pages (e.g., "Miami Water Damage" at /miami-water-damage)
  */
 export function generateMatrixFromStructure(
   locations: Location[],
   templateStructure: TemplateStructure,
-  urlPattern: string = '/{location_slug}-{page_slug}'
+  urlPattern: string = '/{location_slug}-{page_slug}',
+  locationUrlPattern: string = '/service-areas/{location_slug}'
 ): MatrixNode[] {
   const nodes: MatrixNode[] = []
   
   // Get all pages marked for multiplication (at any depth)
   const multiplyPages = extractMultiplyPages(templateStructure)
 
-  // Generate location variants for each multiply page
   let position = 0
   for (const location of locations) {
+    // 1. Create standalone location landing page (e.g., "Miami" at /service-areas/miami)
+    const locationUrl = locationUrlPattern.replace('{location_slug}', location.url_slug)
+    nodes.push({
+      title: location.name,
+      url: locationUrl,
+      page_type: 'location',
+      source: 'template',
+      position: position++,
+      metadata: {
+        location_id: location.id,
+        location_name: location.name
+      }
+    })
+
+    // 2. Create location × service pages (e.g., "Miami Water Damage")
     for (const page of multiplyPages) {
       // Extract slug from URL pattern
       const pageSlug = page.url_pattern.replace(/^\//, '').replace(/\//g, '-')
@@ -139,14 +156,17 @@ export function matrixToSitemapNodes(
 }
 
 /**
- * Calculate how many pages the matrix will generate from template structure
+ * Calculate how many pages the matrix will generate from template structure.
+ * Includes: location landing pages + location × service pages
  */
 export function calculateMatrixSizeFromStructure(
   locations: Location[],
   templateStructure: TemplateStructure
 ): number {
   const multiplyPages = extractMultiplyPages(templateStructure)
-  return locations.length * multiplyPages.length
+  const locationLandingPages = locations.length // one per location
+  const serviceLocationPages = locations.length * multiplyPages.length
+  return locationLandingPages + serviceLocationPages
 }
 
 /**
