@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CrawlForm } from '@/components/features/crawler/CrawlForm'
 import { ServiceConfig } from '@/components/features/services/ServiceConfig'
 import { LocationInput } from '@/components/features/locations/LocationInput'
+import { SitemapViewer } from '@/components/features/sitemap/SitemapViewer'
+import { SitemapToolbar } from '@/components/features/sitemap/SitemapToolbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, CheckCircle } from 'lucide-react'
 import { calculateMatrixSize, validateMatrixInputs, generateMatrix, matrixToSitemapNodes } from '@/lib/utils/matrix'
@@ -25,6 +27,8 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
   const [isComparing, setIsComparing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [comparisonDone, setComparisonDone] = useState(!!project.comparison_result)
+  const [nodeCount, setNodeCount] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const template = project.template
   const templateServices = template?.services as TemplateService[] || []
@@ -113,12 +117,18 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
       })
 
       alert(`Successfully generated ${result.data.created} sitemap pages!`)
+      setRefreshKey(prev => prev + 1)
       router.refresh()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to generate sitemap')
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  // Handle node count update from viewer
+  const handleNodeCountUpdate = (count: number) => {
+    setNodeCount(count)
   }
 
   // Handle services config change
@@ -174,6 +184,7 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
         </TabsTrigger>
         <TabsTrigger value="configure">3. Configure</TabsTrigger>
         <TabsTrigger value="generate">4. Generate</TabsTrigger>
+        <TabsTrigger value="view">5. View & Export</TabsTrigger>
       </TabsList>
 
       <TabsContent value="crawl" className="space-y-4">
@@ -264,6 +275,11 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
             )}
           </CardContent>
         </Card>
+      </TabsContent>
+
+      <TabsContent value="view" className="space-y-4">
+        <SitemapToolbar projectId={project.id} nodeCount={nodeCount} />
+        <SitemapViewer projectId={project.id} key={refreshKey} onNodeCountUpdate={handleNodeCountUpdate} />
       </TabsContent>
     </Tabs>
   )
