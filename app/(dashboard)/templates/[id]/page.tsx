@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
+import { TemplateForm } from '@/components/features/templates/builder/TemplateForm'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -67,6 +68,26 @@ export default async function TemplateDetailPage({ params }: PageProps) {
     notFound()
   }
 
+  // If admin, show editor
+  if (isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Edit Template</h1>
+            <p className="text-muted-foreground">{template.name}</p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href="/templates">Back to Templates</Link>
+          </Button>
+        </div>
+        
+        <TemplateForm initialTemplate={template} mode="edit" />
+      </div>
+    )
+  }
+
+  // Non-admin view (read-only)
   const structure = template.structure as TemplateStructure
   const services = template.services as TemplateService[]
 
@@ -80,11 +101,6 @@ export default async function TemplateDetailPage({ params }: PageProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {!template.is_active && (
-            <span className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
-              Inactive
-            </span>
-          )}
           <Button variant="outline" asChild>
             <Link href="/templates">Back to Templates</Link>
           </Button>
@@ -143,22 +159,6 @@ export default async function TemplateDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
-
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin Actions</CardTitle>
-            <CardDescription>Manage this template</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <strong>Template editing coming soon:</strong> Full template editing functionality will be added in a future update.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
