@@ -5,16 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CrawlForm } from '@/components/features/crawler/CrawlForm'
-import { ServiceConfig } from '@/components/features/services/ServiceConfig'
 import { LocationInput } from '@/components/features/locations/LocationInput'
 import { SitemapViewer } from '@/components/features/sitemap/SitemapViewer'
 import { SitemapToolbar } from '@/components/features/sitemap/SitemapToolbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, CheckCircle } from 'lucide-react'
-import { calculateMatrixSize, validateMatrixInputs, generateMatrix, matrixToSitemapNodes, generateMatrixFromStructure, calculateMatrixSizeFromStructure, validateMatrixFromStructure } from '@/lib/utils/matrix'
-import { extractTemplatePages } from '@/lib/claude/compare'
-import { extractAllPages } from '@/lib/utils/template-helpers'
-import type { Project, Template, TemplateStructure, TemplateService, ServiceConfig as ServiceConfigType, Location } from '@/types/database'
+import { matrixToSitemapNodes, generateMatrixFromStructure, calculateMatrixSizeFromStructure, validateMatrixFromStructure } from '@/lib/utils/matrix'
+import { extractAllPages, extractMultiplyPages } from '@/lib/utils/template-helpers'
+import type { Project, Template, TemplateStructure, Location } from '@/types/database'
 
 interface ProjectEditorProps {
   project: Project & { template: Template | null }
@@ -23,7 +21,6 @@ interface ProjectEditorProps {
 export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
   const router = useRouter()
   const [project, setProject] = useState(initialProject)
-  const [servicesConfig, setServicesConfig] = useState<ServiceConfigType[]>(project.services_config as ServiceConfigType[] || [])
   const [locations, setLocations] = useState<Location[]>(project.locations as Location[] || [])
   const [isComparing, setIsComparing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -32,8 +29,8 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
   const [refreshKey, setRefreshKey] = useState(0)
 
   const template = project.template
-  const templateServices = template?.services as TemplateService[] || []
   const templateStructure = template?.structure as TemplateStructure || { pages: [] }
+  const multiplyPages = extractMultiplyPages(templateStructure)
 
   // Handle AI comparison
   const handleCompare = async () => {
@@ -107,12 +104,11 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
         throw new Error(result.error?.message || 'Failed to generate sitemap')
       }
 
-      // Update project with services/locations
+      // Update project with locations
       await fetch(`/api/projects/${project.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          services_config: servicesConfig,
           locations: locations,
           status: 'finalized'
         })
@@ -131,18 +127,6 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
   // Handle node count update from viewer
   const handleNodeCountUpdate = (count: number) => {
     setNodeCount(count)
-  }
-
-  // Handle services config change
-  const handleServicesChange = async (newConfig: ServiceConfigType[]) => {
-    setServicesConfig(newConfig)
-    
-    // Auto-save to project
-    await fetch(`/api/projects/${project.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ services_config: newConfig })
-    })
   }
 
   // Handle locations change
@@ -229,11 +213,36 @@ export function ProjectEditor({ project: initialProject }: ProjectEditorProps) {
       </TabsContent>
 
       <TabsContent value="configure" className="space-y-4">
-        <ServiceConfig
-          templateServices={templateServices}
-          initialConfig={servicesConfig}
-          onChange={handleServicesChange}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Pages Marked for Location Multiplication</CardTitle>
+            <CardDescription>
+              These pages from your template will be multiplied by each location
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {multiplyPages.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No pages are marked to multiply. Edit your template to mark pages with "Multiply by locations".
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {multiplyPages.map((page) => (
+                  <div key={page.id} className="p-2 border rounded-md bg-blue-50">
+                    <p className="text-sm font-medium">{page.title}</p>
+                    {page.path.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {page.path.join(' > ')} > {page.title}
+                      </p>
+                    )}
+                    <p className="text-xs text-blue-600 mt-1">{page.url_pattern}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
         <LocationInput
           locations={locations}
           onChange={handleLocationsChange}

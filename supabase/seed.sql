@@ -1,108 +1,39 @@
 -- Seed data for AI Sitemap Builder
--- Run this after migrations to populate initial data
-
--- Note: This seed creates a template without created_by since we don't have an admin user yet.
--- In production, create an admin user first and update the created_by field.
+-- Updated to use new hierarchical structure with multiply_in_matrix flags
 
 -- Restoration Company Template
 INSERT INTO public.templates (id, name, description, structure, services, url_patterns, is_active) VALUES
 (
   'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'Restoration Company',
-  'Standard sitemap template for water damage, fire damage, and mold restoration companies. Includes service pages, location pages, and service+location combinations.',
-  '{
-    "pages": [
-      {
-        "id": "home",
-        "title": "Home",
-        "url_pattern": "/",
-        "children": []
-      },
-      {
-        "id": "about",
-        "title": "About Us",
-        "url_pattern": "/about",
-        "children": []
-      },
-      {
-        "id": "services",
-        "title": "Services",
-        "url_pattern": "/services",
-        "children": [
-          {
-            "id": "water-damage",
-            "title": "Water Damage Restoration",
-            "url_pattern": "/water-damage",
-            "is_service": true
-          },
-          {
-            "id": "fire-damage",
-            "title": "Fire Damage Restoration",
-            "url_pattern": "/fire-damage",
-            "is_service": true
-          },
-          {
-            "id": "mold-remediation",
-            "title": "Mold Remediation",
-            "url_pattern": "/mold-remediation",
-            "is_service": true
-          },
-          {
-            "id": "storm-damage",
-            "title": "Storm Damage Repair",
-            "url_pattern": "/storm-damage",
-            "is_service": true
-          }
-        ]
-      },
-      {
-        "id": "service-areas",
-        "title": "Service Areas",
-        "url_pattern": "/service-areas",
-        "is_location_parent": true,
-        "children": []
-      },
-      {
-        "id": "blog",
-        "title": "Blog",
-        "url_pattern": "/blog",
-        "children": []
-      },
-      {
-        "id": "contact",
-        "title": "Contact Us",
-        "url_pattern": "/contact",
-        "children": []
-      },
-      {
-        "id": "testimonials",
-        "title": "Testimonials",
-        "url_pattern": "/testimonials",
-        "children": []
-      },
-      {
-        "id": "faq",
-        "title": "FAQ",
-        "url_pattern": "/faq",
-        "children": []
-      }
-    ]
-  }',
-  '[
-    {"id": "water-damage", "name": "Water Damage Restoration", "url_slug": "water-damage", "category": "restoration"},
-    {"id": "fire-damage", "name": "Fire Damage Restoration", "url_slug": "fire-damage", "category": "restoration"},
-    {"id": "mold-remediation", "name": "Mold Remediation", "url_slug": "mold-remediation", "category": "restoration"},
-    {"id": "storm-damage", "name": "Storm Damage Repair", "url_slug": "storm-damage", "category": "restoration"},
-    {"id": "sewage-cleanup", "name": "Sewage Cleanup", "url_slug": "sewage-cleanup", "category": "cleanup"},
-    {"id": "biohazard", "name": "Biohazard Cleanup", "url_slug": "biohazard-cleanup", "category": "cleanup"},
-    {"id": "smoke-odor", "name": "Smoke & Odor Removal", "url_slug": "smoke-odor-removal", "category": "restoration"},
-    {"id": "content-restoration", "name": "Content Restoration", "url_slug": "content-restoration", "category": "restoration"}
-  ]',
-  '{
-    "service": "/{service_slug}",
-    "location": "/service-areas/{location_slug}",
-    "service_location": "/{location_slug}-{service_slug}"
-  }',
+  'Advanced sitemap template for restoration companies with nested service hierarchies. Supports water damage, fire damage, and mold services with detailed sub-services.',
+  '{"pages": [
+    {"id": "home", "title": "Home", "url_pattern": "/", "children": []},
+    {"id": "about", "title": "About Us", "url_pattern": "/about", "children": []},
+    {"id": "services", "title": "Services", "url_pattern": "/services", "children": [
+      {"id": "water-damage", "title": "Water Damage Restoration", "url_pattern": "/water-damage", "multiply_in_matrix": true, "children": [
+        {"id": "flood-cleanup", "title": "Flood Damage Cleanup", "url_pattern": "/water-damage/flood-cleanup", "multiply_in_matrix": true},
+        {"id": "water-extraction", "title": "Water Extraction", "url_pattern": "/water-damage/water-extraction", "multiply_in_matrix": true},
+        {"id": "structural-drying", "title": "Structural Drying", "url_pattern": "/water-damage/structural-drying", "multiply_in_matrix": true}
+      ]},
+      {"id": "fire-damage", "title": "Fire Damage Restoration", "url_pattern": "/fire-damage", "multiply_in_matrix": true, "children": [
+        {"id": "smoke-damage", "title": "Smoke Damage Cleanup", "url_pattern": "/fire-damage/smoke-damage", "multiply_in_matrix": true},
+        {"id": "soot-removal", "title": "Soot Removal", "url_pattern": "/fire-damage/soot-removal", "multiply_in_matrix": true}
+      ]},
+      {"id": "mold-remediation", "title": "Mold Remediation", "url_pattern": "/mold-remediation", "multiply_in_matrix": true, "children": [
+        {"id": "mold-inspection", "title": "Mold Inspection", "url_pattern": "/mold-remediation/inspection", "multiply_in_matrix": true},
+        {"id": "mold-removal", "title": "Mold Removal", "url_pattern": "/mold-remediation/removal", "multiply_in_matrix": true}
+      ]},
+      {"id": "storm-damage", "title": "Storm Damage Repair", "url_pattern": "/storm-damage", "multiply_in_matrix": true}
+    ]},
+    {"id": "service-areas", "title": "Service Areas", "url_pattern": "/service-areas", "is_location_parent": true, "children": []},
+    {"id": "blog", "title": "Blog", "url_pattern": "/blog", "children": []},
+    {"id": "contact", "title": "Contact Us", "url_pattern": "/contact", "children": []},
+    {"id": "testimonials", "title": "Testimonials", "url_pattern": "/testimonials", "children": []},
+    {"id": "faq", "title": "FAQ", "url_pattern": "/faq", "children": []}
+  ]}',
+  '[]',
+  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/{location_slug}-{page_slug}"}',
   true
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -119,93 +50,32 @@ INSERT INTO public.templates (id, name, description, structure, services, url_pa
 (
   'b2c3d4e5-f6a7-8901-bcde-f23456789012',
   'HVAC Company',
-  'Standard sitemap template for heating, ventilation, and air conditioning companies. Includes residential and commercial service pages.',
-  '{
-    "pages": [
-      {
-        "id": "home",
-        "title": "Home",
-        "url_pattern": "/",
-        "children": []
-      },
-      {
-        "id": "about",
-        "title": "About Us",
-        "url_pattern": "/about",
-        "children": []
-      },
-      {
-        "id": "services",
-        "title": "Services",
-        "url_pattern": "/services",
-        "children": [
-          {
-            "id": "ac-repair",
-            "title": "AC Repair",
-            "url_pattern": "/ac-repair",
-            "is_service": true
-          },
-          {
-            "id": "ac-installation",
-            "title": "AC Installation",
-            "url_pattern": "/ac-installation",
-            "is_service": true
-          },
-          {
-            "id": "heating-repair",
-            "title": "Heating Repair",
-            "url_pattern": "/heating-repair",
-            "is_service": true
-          },
-          {
-            "id": "furnace-installation",
-            "title": "Furnace Installation",
-            "url_pattern": "/furnace-installation",
-            "is_service": true
-          },
-          {
-            "id": "hvac-maintenance",
-            "title": "HVAC Maintenance",
-            "url_pattern": "/hvac-maintenance",
-            "is_service": true
-          }
-        ]
-      },
-      {
-        "id": "service-areas",
-        "title": "Service Areas",
-        "url_pattern": "/service-areas",
-        "is_location_parent": true,
-        "children": []
-      },
-      {
-        "id": "financing",
-        "title": "Financing",
-        "url_pattern": "/financing",
-        "children": []
-      },
-      {
-        "id": "contact",
-        "title": "Contact Us",
-        "url_pattern": "/contact",
-        "children": []
-      }
-    ]
-  }',
-  '[
-    {"id": "ac-repair", "name": "AC Repair", "url_slug": "ac-repair", "category": "cooling"},
-    {"id": "ac-installation", "name": "AC Installation", "url_slug": "ac-installation", "category": "cooling"},
-    {"id": "heating-repair", "name": "Heating Repair", "url_slug": "heating-repair", "category": "heating"},
-    {"id": "furnace-installation", "name": "Furnace Installation", "url_slug": "furnace-installation", "category": "heating"},
-    {"id": "hvac-maintenance", "name": "HVAC Maintenance", "url_slug": "hvac-maintenance", "category": "maintenance"},
-    {"id": "duct-cleaning", "name": "Duct Cleaning", "url_slug": "duct-cleaning", "category": "maintenance"},
-    {"id": "indoor-air-quality", "name": "Indoor Air Quality", "url_slug": "indoor-air-quality", "category": "air-quality"}
-  ]',
-  '{
-    "service": "/{service_slug}",
-    "location": "/service-areas/{location_slug}",
-    "service_location": "/{location_slug}-{service_slug}"
-  }',
+  'Comprehensive HVAC template with cooling, heating, and maintenance service categories.',
+  '{"pages": [
+    {"id": "home", "title": "Home", "url_pattern": "/", "children": []},
+    {"id": "about", "title": "About Us", "url_pattern": "/about", "children": []},
+    {"id": "services", "title": "Services", "url_pattern": "/services", "children": [
+      {"id": "cooling", "title": "Cooling Services", "url_pattern": "/cooling", "children": [
+        {"id": "ac-repair", "title": "AC Repair", "url_pattern": "/cooling/ac-repair", "multiply_in_matrix": true},
+        {"id": "ac-installation", "title": "AC Installation", "url_pattern": "/cooling/ac-installation", "multiply_in_matrix": true},
+        {"id": "ac-maintenance", "title": "AC Maintenance", "url_pattern": "/cooling/ac-maintenance", "multiply_in_matrix": true}
+      ]},
+      {"id": "heating", "title": "Heating Services", "url_pattern": "/heating", "children": [
+        {"id": "furnace-repair", "title": "Furnace Repair", "url_pattern": "/heating/furnace-repair", "multiply_in_matrix": true},
+        {"id": "furnace-installation", "title": "Furnace Installation", "url_pattern": "/heating/furnace-installation", "multiply_in_matrix": true},
+        {"id": "heat-pump", "title": "Heat Pump Services", "url_pattern": "/heating/heat-pump", "multiply_in_matrix": true}
+      ]},
+      {"id": "maintenance", "title": "Maintenance", "url_pattern": "/maintenance", "children": [
+        {"id": "tune-up", "title": "HVAC Tune-Up", "url_pattern": "/maintenance/tune-up", "multiply_in_matrix": true},
+        {"id": "duct-cleaning", "title": "Duct Cleaning", "url_pattern": "/maintenance/duct-cleaning", "multiply_in_matrix": true}
+      ]}
+    ]},
+    {"id": "service-areas", "title": "Service Areas", "url_pattern": "/service-areas", "is_location_parent": true, "children": []},
+    {"id": "financing", "title": "Financing", "url_pattern": "/financing", "children": []},
+    {"id": "contact", "title": "Contact Us", "url_pattern": "/contact", "children": []}
+  ]}',
+  '[]',
+  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/{location_slug}-{page_slug}"}',
   true
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -222,87 +92,27 @@ INSERT INTO public.templates (id, name, description, structure, services, url_pa
 (
   'c3d4e5f6-a7b8-9012-cdef-345678901234',
   'Plumbing Company',
-  'Standard sitemap template for plumbing and drain cleaning companies. Includes emergency services and scheduled maintenance pages.',
-  '{
-    "pages": [
-      {
-        "id": "home",
-        "title": "Home",
-        "url_pattern": "/",
-        "children": []
-      },
-      {
-        "id": "about",
-        "title": "About Us",
-        "url_pattern": "/about",
-        "children": []
-      },
-      {
-        "id": "services",
-        "title": "Services",
-        "url_pattern": "/services",
-        "children": [
-          {
-            "id": "drain-cleaning",
-            "title": "Drain Cleaning",
-            "url_pattern": "/drain-cleaning",
-            "is_service": true
-          },
-          {
-            "id": "water-heater",
-            "title": "Water Heater Services",
-            "url_pattern": "/water-heater",
-            "is_service": true
-          },
-          {
-            "id": "leak-repair",
-            "title": "Leak Repair",
-            "url_pattern": "/leak-repair",
-            "is_service": true
-          },
-          {
-            "id": "pipe-repair",
-            "title": "Pipe Repair & Replacement",
-            "url_pattern": "/pipe-repair",
-            "is_service": true
-          },
-          {
-            "id": "emergency-plumbing",
-            "title": "Emergency Plumbing",
-            "url_pattern": "/emergency-plumbing",
-            "is_service": true
-          }
-        ]
-      },
-      {
-        "id": "service-areas",
-        "title": "Service Areas",
-        "url_pattern": "/service-areas",
-        "is_location_parent": true,
-        "children": []
-      },
-      {
-        "id": "contact",
-        "title": "Contact Us",
-        "url_pattern": "/contact",
-        "children": []
-      }
-    ]
-  }',
-  '[
-    {"id": "drain-cleaning", "name": "Drain Cleaning", "url_slug": "drain-cleaning", "category": "drains"},
-    {"id": "water-heater", "name": "Water Heater Services", "url_slug": "water-heater", "category": "water-heater"},
-    {"id": "leak-repair", "name": "Leak Repair", "url_slug": "leak-repair", "category": "repair"},
-    {"id": "pipe-repair", "name": "Pipe Repair & Replacement", "url_slug": "pipe-repair", "category": "repair"},
-    {"id": "emergency-plumbing", "name": "Emergency Plumbing", "url_slug": "emergency-plumbing", "category": "emergency"},
-    {"id": "sewer-line", "name": "Sewer Line Services", "url_slug": "sewer-line", "category": "drains"},
-    {"id": "fixture-installation", "name": "Fixture Installation", "url_slug": "fixture-installation", "category": "installation"}
-  ]',
-  '{
-    "service": "/{service_slug}",
-    "location": "/service-areas/{location_slug}",
-    "service_location": "/{location_slug}-{service_slug}"
-  }',
+  'Full-service plumbing template with residential and commercial service categories.',
+  '{"pages": [
+    {"id": "home", "title": "Home", "url_pattern": "/", "children": []},
+    {"id": "about", "title": "About Us", "url_pattern": "/about", "children": []},
+    {"id": "services", "title": "Services", "url_pattern": "/services", "children": [
+      {"id": "residential", "title": "Residential Plumbing", "url_pattern": "/residential", "children": [
+        {"id": "drain-cleaning", "title": "Drain Cleaning", "url_pattern": "/residential/drain-cleaning", "multiply_in_matrix": true},
+        {"id": "water-heater", "title": "Water Heater Services", "url_pattern": "/residential/water-heater", "multiply_in_matrix": true},
+        {"id": "leak-repair", "title": "Leak Repair", "url_pattern": "/residential/leak-repair", "multiply_in_matrix": true}
+      ]},
+      {"id": "commercial", "title": "Commercial Plumbing", "url_pattern": "/commercial", "children": [
+        {"id": "commercial-drain", "title": "Commercial Drain Services", "url_pattern": "/commercial/drain-services", "multiply_in_matrix": true},
+        {"id": "backflow-testing", "title": "Backflow Testing", "url_pattern": "/commercial/backflow-testing", "multiply_in_matrix": true}
+      ]},
+      {"id": "emergency", "title": "Emergency Plumbing", "url_pattern": "/emergency-plumbing", "multiply_in_matrix": true}
+    ]},
+    {"id": "service-areas", "title": "Service Areas", "url_pattern": "/service-areas", "is_location_parent": true, "children": []},
+    {"id": "contact", "title": "Contact Us", "url_pattern": "/contact", "children": []}
+  ]}',
+  '[]',
+  '{"service": "/{service_slug}", "location": "/service-areas/{location_slug}", "service_location": "/{location_slug}-{page_slug}"}',
   true
 )
 ON CONFLICT (id) DO UPDATE SET

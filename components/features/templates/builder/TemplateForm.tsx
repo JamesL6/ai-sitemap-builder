@@ -8,10 +8,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ServiceManager } from './ServiceManager'
 import { PageBuilder } from './PageBuilder'
 import { Loader2 } from 'lucide-react'
-import type { Template, TemplateService, TemplatePage } from '@/types/database'
+import type { Template, TemplatePage } from '@/types/database'
 
 interface TemplateFormProps {
   initialTemplate?: Template
@@ -26,9 +25,6 @@ export function TemplateForm({ initialTemplate, mode }: TemplateFormProps) {
   const [name, setName] = useState(initialTemplate?.name || '')
   const [description, setDescription] = useState(initialTemplate?.description || '')
   const [isActive, setIsActive] = useState(initialTemplate?.is_active ?? true)
-  const [services, setServices] = useState<TemplateService[]>(
-    (initialTemplate?.services as TemplateService[]) || []
-  )
   const [pages, setPages] = useState<TemplatePage[]>(
     (initialTemplate?.structure as any)?.pages || []
   )
@@ -53,11 +49,11 @@ export function TemplateForm({ initialTemplate, mode }: TemplateFormProps) {
         name: name.trim(),
         description: description.trim() || null,
         structure: { pages },
-        services,
+        services: [], // Keep empty for backward compatibility
         url_patterns: {
           service: '/{service_slug}',
           location: '/service-areas/{location_slug}',
-          service_location: '/{location_slug}-{service_slug}'
+          service_location: '/{location_slug}-{page_slug}'
         },
         is_active: isActive
       }
@@ -147,8 +143,6 @@ export function TemplateForm({ initialTemplate, mode }: TemplateFormProps) {
       </Card>
 
       <PageBuilder pages={pages} onChange={setPages} />
-      
-      <ServiceManager services={services} onChange={setServices} />
 
       <div className="flex gap-3 pt-4">
         <Button
