@@ -17,7 +17,7 @@ export interface ClaudeOptions {
 }
 
 const DEFAULT_OPTIONS: Required<ClaudeOptions> = {
-  model: 'claude-sonnet-4-5-20250514',
+  model: 'claude-sonnet-4-5-20250929',
   maxTokens: 4096,
   temperature: 0.7
 }
