@@ -27,10 +27,10 @@ export async function comparePages(
     // Ask Claude with extended thinking for complex page matching
     const response = await askClaude(prompt, {
       temperature: 0.3, // Lower temperature for more consistent matching
-      maxTokens: 32000, // Increased to handle large sitemaps (up to 64K available)
+      maxTokens: 64000, // Maximum output tokens for comprehensive analysis
       thinking: {
         type: 'enabled',
-        budget_tokens: 16000 // Allow extended thinking for complex reasoning
+        budget_tokens: 32000 // Large thinking budget for deep reasoning on complex sitemaps
       }
     })
 

@@ -22,7 +22,7 @@ export interface ClaudeOptions {
 
 const DEFAULT_OPTIONS = {
   model: 'claude-sonnet-4-5-20250929',
-  maxTokens: 32000, // Increased for larger tasks
+  maxTokens: 64000, // Maximum output tokens supported by Sonnet 4.5
   temperature: 0.7
 }
 
