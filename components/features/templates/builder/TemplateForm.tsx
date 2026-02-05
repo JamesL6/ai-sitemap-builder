@@ -80,9 +80,15 @@ export function TemplateForm({ initialTemplate, mode }: TemplateFormProps) {
         throw new Error(result.error?.message || `Failed to ${mode} template`)
       }
 
-      // Navigate to templates list
-      router.push('/templates')
-      router.refresh()
+      if (mode === 'create') {
+        // Navigate to templates list after creating
+        router.push('/templates')
+        router.refresh()
+      } else {
+        // Stay on edit page, just refresh data
+        router.refresh()
+        alert('Template saved successfully!')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
